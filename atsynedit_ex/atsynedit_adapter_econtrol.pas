@@ -290,6 +290,8 @@ var
   i: integer;
 begin
   Result:= ADefColor;
+
+  //todo: binary search in ListColors...
   for i:= ListColors.Count-1 downto 0 do
   begin
     Rng:= TATRangeColored(ListColors[i]);
@@ -313,6 +315,7 @@ var
   i, j: integer;
   act: boolean;
 begin
+  //todo: binary search in ListColors...
   for i:= 0 to ListColors.Count-1 do
   begin
     Rng:= TATRangeColored(ListColors[i]);
@@ -345,6 +348,8 @@ begin
 
   //deactivate ranges by DynSelectMin
   //cycle back, to see first nested ranges
+
+  //todo: binary search
   for i:= ListColors.Count-1 downto 0 do
   begin
     Rng:= TATRangeColored(ListColors[i]);
@@ -1221,6 +1226,7 @@ var
   Rng: TATRangeColored;
   i: integer;
 begin
+  //todo: binary search
   for i:= 0 to ListColors.Count-1 do
   begin
     Rng:= TATRangeColored(ListColors[i]);
