@@ -735,11 +735,17 @@ begin
 end;
 
 function TATAdapterEControl.TreeGetPositionOfRange(R: TecTextRange): TPoint;
+var
+  n: integer;
 begin
   Result:= Point(0, 0);
   if R=nil then exit;
   if AnClient=nil then exit;
-  Result:= Buffer.StrToCaret(R.StartPos);
+
+  n:= R.StartIdx;
+  if n>=0 then
+    Result:= AnClient.Tags[n].PointStart;
+  //Result:= Buffer.StrToCaret(R.StartPos);
 end;
 
 procedure TATAdapterEControl.TreeGetPositionOfRange(R: TecTextRange; out P1, P2: TPoint);
