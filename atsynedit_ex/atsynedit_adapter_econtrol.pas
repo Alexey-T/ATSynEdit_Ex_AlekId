@@ -29,14 +29,15 @@ type
 
   TATRangeColored = class
   public
-    Pos1, Pos2: integer;
+    Pos1, Pos2: TPoint;
     Token1, Token2: integer;
     Color: TColor;
     Rule: TecTagBlockCondition;
     Active: array[0..Pred(cMaxStringsClients)] of boolean;
-    constructor Create(APos1, APos2, AToken1, AToken2: integer;
-      AColor: TColor;
-      ARule: TecTagBlockCondition);
+    constructor Create(
+      APos1, APos2: TPoint;
+      AToken1, AToken2: integer;
+      AColor: TColor; ARule: TecTagBlockCondition);
   end;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
@@ -74,7 +75,7 @@ type
     function GetRangeParent(R: TecTextRange): TecTextRange;
     procedure GetTokenProps(token: TecSyntToken; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
-    function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: integer; ACond: TATRangeCond): boolean;
+    function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: TPoint; ACond: TATRangeCond): boolean;
     procedure SetPartStyleFromEcStyle(var part: TATLinePart; st: TecSyntaxFormat);
     function GetTokenColorBG_FromColoredRanges(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
@@ -107,7 +108,7 @@ type
     //tokens
     procedure GetTokenWithIndex(AIndex: integer; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
-    procedure GetTokenAtPos(Pnt: TPoint; out APntFrom, APntTo: TPoint; out
+    procedure GetTokenAtPos(APos: TPoint; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
 
     //support for syntax-tree
@@ -156,9 +157,20 @@ const
     cLineStyleDotted
     );
 
+function ComparePoints(P1, P2: TPoint): integer;
+begin
+  if (P1.X=P2.X) and (P1.Y=P2.Y) then exit(0);
+  if (P1.Y>P2.Y) then exit(1);
+  if (P1.Y<P2.Y) then exit(-1);
+  if (P1.X>P2.X) then exit(1) else exit(-1);
+end;
+
+
 { TATRangeColored }
 
-constructor TATRangeColored.Create(APos1, APos2, AToken1, AToken2: integer;
+constructor TATRangeColored.Create(
+  APos1, APos2: TPoint;
+  AToken1, AToken2: integer;
   AColor: TColor; ARule: TecTagBlockCondition);
 begin
   Pos1:= APos1;
@@ -210,10 +222,11 @@ begin
 end;
 
 function TATAdapterEControl.IsCaretInRange(AEdit: TATSynEdit; APos1,
-  APos2: integer; ACond: TATRangeCond): boolean;
+  APos2: TPoint; ACond: TATRangeCond): boolean;
 var
   Caret: TATCaretItem;
-  Pos: integer;
+  Pnt: TPoint;
+  dif1, dif2: integer;
   i: integer;
   ok: boolean;
 begin
@@ -223,24 +236,23 @@ begin
   for i:= 0 to AEdit.Carets.Count-1 do
   begin
     Caret:= AEdit.Carets[i];
-    Pos:= Buffer.CaretToStr(Point(Caret.PosX, Caret.PosY));
+    Pnt:= Point(Caret.PosX, Caret.PosY);
+
+    dif1:= ComparePoints(Pnt, APos1);
+    dif2:= ComparePoints(Pnt, APos2);
 
     case ACond of
       cCondInside:
-        ok:= (Pos>=APos1) and (Pos<APos2);
+        ok:= (dif1>=0) and (dif2<0);
       cCondOutside:
-        ok:= (Pos<APos1) or (Pos>=APos2);
+        ok:= (dif1<0) or (dif2>=0);
       cCondAtBound:
-        ok:= (Pos=APos1) or (Pos=APos2);
+        ok:= (dif1=0) or (dif2=0);
       else
         ok:= false;
     end;
 
-    if ok then
-    begin
-      Result:= true;
-      Exit
-    end;
+    if ok then exit(true);
   end;
 end;
 
@@ -275,7 +287,6 @@ function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
   Rng: TATRangeColored;
-  tmpPos: integer;
   i: integer;
 begin
   Result:= ADefColor;
@@ -287,8 +298,11 @@ begin
       if not (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]) then
         Continue;
 
-    tmpPos:= Buffer.CaretToStr(APos);
-    if (tmpPos>=Rng.Pos1) and (tmpPos<Rng.Pos2) then
+    if IsPosInRange(
+      APos.X, APos.Y,
+      Rng.Pos1.X, Rng.Pos1.Y,
+      Rng.Pos2.X, Rng.Pos2.Y
+      ) = cRelateInside then
       Exit(Rng.Color);
   end;
 end;
@@ -344,7 +358,8 @@ begin
       RngOut:= TATRangeColored(ListColors[j]);
       if RngOut.Rule=Rng.Rule then
         if RngOut.Active[AEdit.EditorIndex] then
-          if (RngOut.Pos1<=Rng.Pos1) and (RngOut.Pos2>=Rng.Pos2) then
+          if (ComparePoints(RngOut.Pos1, Rng.Pos1)<=0) and
+             (ComparePoints(RngOut.Pos2, Rng.Pos2)>=0) then
             RngOut.Active[AEdit.EditorIndex]:= false;
     end;
   end;
@@ -588,12 +603,11 @@ begin
     GetTokenProps(AnClient.Tags[AIndex], APntFrom, APntTo, ATokenString, ATokenStyle);
 end;
 
-procedure TATAdapterEControl.GetTokenAtPos(Pnt: TPoint;
+procedure TATAdapterEControl.GetTokenAtPos(APos: TPoint;
   out APntFrom, APntTo: TPoint;
   out ATokenString, ATokenStyle: string);
 var
-  token: TecSyntToken;
-  offset, i: integer;
+  n: integer;
 begin
   APntFrom:= Point(-1, -1);
   APntTo:= Point(-1, -1);
@@ -602,17 +616,10 @@ begin
 
   if AnClient=nil then exit;
   if Buffer=nil then exit;
-  offset:= Buffer.CaretToStr(Pnt);
 
-  for i:= 0 to AnClient.TagCount-1 do
-  begin
-    token:= AnClient.Tags[i];
-    if (offset>=token.StartPos) and (offset<token.EndPos) then
-    begin
-      GetTokenProps(token, APntFrom, APntTo, ATokenString, ATokenStyle);
-      exit;
-    end;
-  end;
+  n:= DoFindToken(APos);
+  if n>=0 then
+    GetTokenProps(AnClient.Tags[n], APntFrom, APntTo, ATokenString, ATokenStyle);
 end;
 
 
@@ -987,7 +994,6 @@ procedure TATAdapterEControl.UpdateRangesFold;
 var
   R: TecTextRange;
   Pnt1, Pnt2: TPoint;
-  Pos1, Pos2: integer;
   Style: TecSyntaxFormat;
   SHint: string;
   tokenStart, tokenEnd: TecSyntToken;
@@ -1017,8 +1023,6 @@ begin
 
     tokenStart:= AnClient.Tags[R.StartIdx];
     tokenEnd:= AnClient.Tags[R.EndIdx];
-    Pos1:= tokenStart.StartPos;
-    Pos2:= tokenEnd.EndPos;
     Pnt1:= tokenStart.PointStart;
     Pnt2:= tokenEnd.PointEnd;
     if Pnt1.Y<0 then Continue;
@@ -1039,12 +1043,17 @@ begin
           //support lexer opt "Hilite lines of block"
           if R.Rule.Highlight then
           begin
-            Pnt2.X:= Buffer.LineLength(Pnt2.Y);
-            Pos2:= Buffer.CaretToStr(Pnt2)+1;
+            Pnt2.X:= Buffer.LineLength(Pnt2.Y) + 1;
               //+1 to make range longer, to hilite line to screen end
           end;
 
-          ListColors.Add(TATRangeColored.Create(Pos1, Pos2, R.StartIdx, R.EndIdx, Style.BgColor, R.Rule));
+          ListColors.Add(TATRangeColored.Create(
+            Pnt1,
+            Pnt2,
+            R.StartIdx,
+            R.EndIdx,
+            Style.BgColor,
+            R.Rule));
         end;
     end;
   end;
@@ -1069,16 +1078,14 @@ begin
     Style:= R.Rule.Style;
     if Style=nil then Continue;
     if Style.BgColor<>clNone then
-      ListColors.Add(TATRangeColored.Create(R.StartPos, R.EndPos, -1, -1, Style.BgColor, nil));
+      ListColors.Add(TATRangeColored.Create(
+        Buffer.StrToCaret(R.StartPos),
+        Buffer.StrToCaret(R.EndPos),
+        -1,
+        -1,
+        Style.BgColor,
+        nil));
   end;
-end;
-
-function ComparePoints(P1, P2: TPoint): integer;
-begin
-  if (P1.X=P2.X) and (P1.Y=P2.Y) then exit(0);
-  if (P1.Y>P2.Y) then exit(1);
-  if (P1.Y<P2.Y) then exit(-1);
-  if (P1.X>P2.X) then exit(1) else exit(-1);
 end;
 
 
