@@ -765,22 +765,25 @@ end;
 
 function TATAdapterEControl.TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 var
-  i: integer;
   R: TecTextRange;
-  NPos, NToken: integer;
+  NTokenOrig: integer;
+  i: integer;
 begin
   Result:= nil;
   if AnClient=nil then exit;
 
-  NPos:= Buffer.CaretToStr(APos);
-  NToken:= AnClient.NextTokenAt(NPos);
-  if NToken<0 then exit;
+  NTokenOrig:= DoFindToken(APos);
+  if NTokenOrig<0 then exit;
 
+  //find last range, which contains our token
   for i:= AnClient.RangeCount-1 downto 0 do
   begin
     R:= AnClient.Ranges[i];
     if not R.Rule.DisplayInTree then Continue;
-    if (R.StartPos<=NPos) and (R.EndIdx>=NToken) then exit(R);
+
+    if (R.StartIdx<=NTokenOrig) and
+       (R.EndIdx>=NTokenOrig) then
+       exit(R);
   end;
 end;
 
