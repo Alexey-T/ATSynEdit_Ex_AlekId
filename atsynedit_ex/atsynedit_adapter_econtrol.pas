@@ -231,7 +231,6 @@ var
   ok: boolean;
 begin
   Result:= false;
-  if not DynamicHiliteActiveNow(AEdit.Strings.Count) then Exit;
 
   for i:= 0 to AEdit.Carets.Count-1 do
   begin
@@ -315,7 +314,8 @@ var
   i, j: integer;
   act: boolean;
 begin
-  //todo: binary search in ListColors...
+  if not DynamicHiliteActiveNow(AEdit.Strings.Count) then Exit;
+
   for i:= 0 to ListColors.Count-1 do
   begin
     Rng:= TATRangeColored(ListColors[i]);
@@ -349,7 +349,6 @@ begin
   //deactivate ranges by DynSelectMin
   //cycle back, to see first nested ranges
 
-  //todo: binary search
   for i:= ListColors.Count-1 downto 0 do
   begin
     Rng:= TATRangeColored(ListColors[i]);
@@ -368,6 +367,8 @@ begin
             RngOut.Active[AEdit.EditorIndex]:= false;
     end;
   end;
+
+  //ShowMessage('ColoredRanges: '+IntToStr(ListColors.Count));
 end;
 
 
