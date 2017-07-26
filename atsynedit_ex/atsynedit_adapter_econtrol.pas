@@ -115,7 +115,7 @@ type
     //support for syntax-tree
     property TreeBusy: boolean read FBusyTreeUpdate;
     procedure TreeFill(ATree: TTreeView);
-    procedure TreeShowItemForCaret(Tree: TTreeView; APos: TPoint);
+    procedure TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
     function TreeGetPositionOfRange(R: TecTextRange): TPoint;
     procedure TreeGetPositionOfRange(R: TecTextRange; out P1, P2: TPoint);
     function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
@@ -817,18 +817,18 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.TreeShowItemForCaret(Tree: TTreeView; APos: TPoint);
+procedure TATAdapterEControl.TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
 var
   R: TecTextRange;
   Node: TTreeNode;
 begin
-  if Tree.Items.Count=0 then exit;
+  if ATree.Items.Count=0 then exit;
   R:= TreeGetRangeOfPosition(APos);
   if R=nil then begin {showmessage('r=nil');} exit; end;
-  Node:= Tree.Items.FindNodeWithData(R);
+  Node:= ATree.Items.FindNodeWithData(R);
   if Node=nil then begin {showmessage('node=nil');} exit; end;
   Node.MakeVisible;
-  Tree.Selected:= Node;
+  ATree.Selected:= Node;
 end;
 
 
