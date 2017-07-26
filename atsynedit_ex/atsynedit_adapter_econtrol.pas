@@ -66,7 +66,7 @@ type
     procedure DoCalcParts(var AParts: TATLineParts; ALine, AX, ALen: integer;
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
-    function DoFindToken(APos: integer): integer;
+    function DoFindToken(APos: TPoint): integer;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
     procedure DoParseBegin;
@@ -76,9 +76,9 @@ type
       ATokenString, ATokenStyle: string);
     function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: integer; ACond: TATRangeCond): boolean;
     procedure SetPartStyleFromEcStyle(var part: TATLinePart; st: TecSyntaxFormat);
-    function GetTokenColorBG_FromColoredRanges(APos: integer;
+    function GetTokenColorBG_FromColoredRanges(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
-    function GetTokenColorBG_FromMultiLineTokens(APos: integer;
+    function GetTokenColorBG_FromMultiLineTokens(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
     procedure UpdateRanges;
@@ -204,11 +204,9 @@ procedure TATAdapterEControl.OnEditorCalcPosColor(Sender: TObject; AX,
   AY: integer; var AColor: TColor);
 var
   Ed: TATSynEdit;
-  Pos: integer;
 begin
   Ed:= Sender as TATSynEdit;
-  Pos:= Buffer.CaretToStr(Point(AX, AY));
-  AColor:= GetTokenColorBG_FromColoredRanges(Pos, AColor, Ed.EditorIndex);
+  AColor:= GetTokenColorBG_FromColoredRanges(Point(AX, AY), AColor, Ed.EditorIndex);
 end;
 
 function TATAdapterEControl.IsCaretInRange(AEdit: TATSynEdit; APos1,
@@ -254,7 +252,8 @@ begin
     AnClient.EnabledLineSeparators:= EnabledLineSeparators;
 end;
 
-function TATAdapterEControl.GetTokenColorBG_FromMultiLineTokens(APos: integer; ADefColor: TColor; AEditorIndex: integer): TColor;
+function TATAdapterEControl.GetTokenColorBG_FromMultiLineTokens(APos: TPoint;
+  ADefColor: TColor; AEditorIndex: integer): TColor;
 var
   Token: TecSyntToken;
   n: integer;
@@ -264,14 +263,19 @@ begin
   if n<0 then exit;
 
   Token:= AnClient.Tags[n];
-  if (Token.StartPos<APos) and (APos<Token.EndPos) then
+  if IsPosInRange(
+    APos.X, APos.Y,
+    Token.PointStart.X, Token.PointStart.Y,
+    Token.PointEnd.X, Token.PointEnd.Y) = cRelateInside then
     if Token.Style<>nil then
       Result:= Token.Style.BgColor;
 end;
 
-function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: integer; ADefColor: TColor; AEditorIndex: integer): TColor;
+function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
+  ADefColor: TColor; AEditorIndex: integer): TColor;
 var
   Rng: TATRangeColored;
+  tmpPos: integer;
   i: integer;
 begin
   Result:= ADefColor;
@@ -283,7 +287,8 @@ begin
       if not (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]) then
         Continue;
 
-    if (APos>=Rng.Pos1) and (APos<Rng.Pos2) then
+    tmpPos:= Buffer.CaretToStr(APos);
+    if (tmpPos>=Rng.Pos1) and (tmpPos<Rng.Pos2) then
       Exit(Rng.Color);
   end;
 end;
@@ -354,22 +359,23 @@ var
   procedure AddMissingPart(AOffset, ALen: integer);
   var
     part: TATLinePart;
-    strpos: integer;
   begin
     if ALen<=0 then Exit;
-    strpos:= Buffer.CaretToStr(Point(AX+AOffset, ALine));
     FillChar(part{%H-}, SizeOf(part), 0);
     part.Offset:= AOffset;
     part.Len:= ALen;
     part.ColorFont:= AColorFont;
-    part.ColorBG:= GetTokenColorBG_FromColoredRanges(strpos, AColorBG, AEditorIndex);
+    part.ColorBG:= GetTokenColorBG_FromColoredRanges(
+      Point(AX+AOffset, ALine),
+      AColorBG,
+      AEditorIndex);
     AParts[partindex]:= part;
     Inc(partindex);
   end;
   //
 var
-  tokenStart, tokenEnd: TPoint;
-  mustOffset, startindex, lineoffset: integer;
+  tokenStart, tokenEnd, TestPoint: TPoint;
+  startindex, mustOffset: integer;
   token: TecSyntToken;
   tokenStyle: TecSyntaxFormat;
   part: TATLinePart;
@@ -379,8 +385,7 @@ begin
   partindex:= 0;
   FillChar(part{%H-}, SizeOf(part), 0);
 
-  lineoffset:= Buffer.CaretToStr(Point(0, ALine));
-  startindex:= DoFindToken(lineoffset);
+  startindex:= DoFindToken(Point(0, ALine));
   if startindex<0 then
     startindex:= 0;
 
@@ -413,7 +418,7 @@ begin
       part.Len:= tokenEnd.X-part.Offset;
 
     part.ColorFont:= AColorFont;
-    part.ColorBG:= GetTokenColorBG_FromColoredRanges(token.StartPos, AColorBG, AEditorIndex);
+    part.ColorBG:= GetTokenColorBG_FromColoredRanges(token.PointStart, AColorBG, AEditorIndex);
 
     tokenStyle:= token.Style;
     DoFindTokenOverrideStyle(tokenStyle, i, AEditorIndex);
@@ -451,16 +456,16 @@ begin
     AddMissingPart(mustOffset, ALen-mustOffset);
 
   //calc AColorAfter
-  mustOffset:= Buffer.CaretToStr(Point(AX+ALen, ALine));
+  TestPoint:= Point(AX+ALen, ALine);
 
   //a) calc it from colored-ranges
-  nColor:= GetTokenColorBG_FromColoredRanges(mustOffset, clNone, AEditorIndex);
+  nColor:= GetTokenColorBG_FromColoredRanges(TestPoint, clNone, AEditorIndex);
   //if (nColor=clNone) and (ALen>0) then
   //  nColor:= GetTokenColorBG_FromColoredRanges(mustOffset-1, clNone, AEditorIndex);
 
   //b) calc it from multi-line tokens (with bg-color)
   if (nColor=clNone) then
-    nColor:= GetTokenColorBG_FromMultiLineTokens(mustOffset, clNone, AEditorIndex);
+    nColor:= GetTokenColorBG_FromMultiLineTokens(TestPoint, clNone, AEditorIndex);
 
   if (nColor=clNone) then
     nColor:= AColorAfter;
@@ -1068,7 +1073,16 @@ begin
   end;
 end;
 
-function TATAdapterEControl.DoFindToken(APos: integer): integer;
+function ComparePoints(P1, P2: TPoint): integer;
+begin
+  if (P1.X=P2.X) and (P1.Y=P2.Y) then exit(0);
+  if (P1.Y>P2.Y) then exit(1);
+  if (P1.Y<P2.Y) then exit(-1);
+  if (P1.X>P2.X) then exit(1) else exit(-1);
+end;
+
+
+function TATAdapterEControl.DoFindToken(APos: TPoint): integer;
 var
   a, b, m, dif: integer;
 begin
@@ -1079,13 +1093,13 @@ begin
   if b<0 then Exit;
 
   repeat
-    dif:= AnClient.Tags[a].StartPos-APos;
+    dif:= ComparePoints(AnClient.Tags[a].PointStart, APos);
     if dif=0 then Exit(a);
 
     //middle, which is near b if not exact middle
     m:= (a+b+1) div 2;
 
-    dif:= AnClient.Tags[m].StartPos-APos;
+    dif:= ComparePoints(AnClient.Tags[m].PointStart, APos);
     if dif=0 then Exit(m);
 
     if Abs(a-b)<=1 then Break;
@@ -1098,7 +1112,8 @@ begin
   begin
     Result:= m;
     with AnClient.Tags[Result] do
-      if (StartPos<=APos) and (APos<EndPos) then exit;
+      if (ComparePoints(PointStart, APos)<=0) and
+         (ComparePoints(APos, PointEnd)<0) then exit;
     Result:= m-1;
   end;
 end;
