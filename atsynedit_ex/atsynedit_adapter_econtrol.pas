@@ -50,7 +50,7 @@ type
     EdList: TList;
     AnClient: TecClientSyntAnalyzer;
     Buffer: TATStringBuffer;
-    ListColors: TList;
+    ListColoredRanges: TList;
     TimerDuringAnalyze: TTimer;
     FEnabledLineSeparators: boolean;
     FBusyTreeUpdate: boolean;
@@ -290,10 +290,10 @@ var
 begin
   Result:= ADefColor;
 
-  //todo: binary search in ListColors...
-  for i:= ListColors.Count-1 downto 0 do
+  //todo: binary search in ListColoredRanges...
+  for i:= ListColoredRanges.Count-1 downto 0 do
   begin
-    Rng:= TATRangeColored(ListColors[i]);
+    Rng:= TATRangeColored(ListColoredRanges[i]);
     if not Rng.Active[AEditorIndex] then Continue;
     if Rng.Rule<>nil then
       if not (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]) then
@@ -316,9 +316,9 @@ var
 begin
   if not DynamicHiliteActiveNow(AEdit.Strings.Count) then Exit;
 
-  for i:= 0 to ListColors.Count-1 do
+  for i:= 0 to ListColoredRanges.Count-1 do
   begin
-    Rng:= TATRangeColored(ListColors[i]);
+    Rng:= TATRangeColored(ListColoredRanges[i]);
     if Rng.Rule=nil then
     begin
       act:= true;
@@ -349,9 +349,9 @@ begin
   //deactivate ranges by DynSelectMin
   //cycle back, to see first nested ranges
 
-  for i:= ListColors.Count-1 downto 0 do
+  for i:= ListColoredRanges.Count-1 downto 0 do
   begin
-    Rng:= TATRangeColored(ListColors[i]);
+    Rng:= TATRangeColored(ListColoredRanges[i]);
     if not Rng.Active[AEdit.EditorIndex] then Continue;
     if Rng.Rule=nil then Continue;
     if not Rng.Rule.DynSelectMin then Continue;
@@ -359,7 +359,7 @@ begin
     //take prev ranges which contain this range
     for j:= i-1 downto 0 do
     begin
-      RngOut:= TATRangeColored(ListColors[j]);
+      RngOut:= TATRangeColored(ListColoredRanges[j]);
       if RngOut.Rule=Rng.Rule then
         if RngOut.Active[AEdit.EditorIndex] then
           if (ComparePoints(RngOut.Pos1, Rng.Pos1)<=0) and
@@ -368,7 +368,7 @@ begin
     end;
   end;
 
-  //ShowMessage('ColoredRanges: '+IntToStr(ListColors.Count));
+  //ShowMessage('ColoredRanges: '+IntToStr(ListColoredRanges.Count));
 end;
 
 
@@ -498,7 +498,7 @@ var
   j: integer;
   Ed: TATSynEdit;
 begin
-  ListColors.Clear;
+  ListColoredRanges.Clear;
 
   for j:= 0 to EdList.Count-1 do
   begin
@@ -515,7 +515,7 @@ begin
   EdList:= TList.Create;
   AnClient:= nil;
   Buffer:= TATStringBuffer.Create;
-  ListColors:= TList.Create;
+  ListColoredRanges:= TList.Create;
   FEnabledLineSeparators:= false;
 
   TimerDuringAnalyze:= TTimer.Create(Self);
@@ -533,9 +533,9 @@ begin
   if Assigned(AnClient) then
     FreeAndNil(AnClient);
 
-  for i:= ListColors.Count-1 downto 0 do
-    TObject(ListColors[i]).Free;
-  FreeAndNil(ListColors);
+  for i:= ListColoredRanges.Count-1 downto 0 do
+    TObject(ListColoredRanges[i]).Free;
+  FreeAndNil(ListColoredRanges);
 
   FreeAndNil(Buffer);
   FreeAndNil(EdList);
@@ -1053,7 +1053,7 @@ begin
               //+1 to make range longer, to hilite line to screen end
           end;
 
-          ListColors.Add(TATRangeColored.Create(
+          ListColoredRanges.Add(TATRangeColored.Create(
             Pnt1,
             Pnt2,
             R.StartIdx,
@@ -1084,7 +1084,7 @@ begin
     Style:= R.Rule.Style;
     if Style=nil then Continue;
     if Style.BgColor<>clNone then
-      ListColors.Add(TATRangeColored.Create(
+      ListColoredRanges.Add(TATRangeColored.Create(
         Buffer.StrToCaret(R.StartPos),
         Buffer.StrToCaret(R.EndPos),
         -1,
@@ -1228,9 +1228,9 @@ var
   i: integer;
 begin
   //todo: binary search
-  for i:= 0 to ListColors.Count-1 do
+  for i:= 0 to ListColoredRanges.Count-1 do
   begin
-    Rng:= TATRangeColored(ListColors[i]);
+    Rng:= TATRangeColored(ListColoredRanges[i]);
     if Rng.Active[AEditorIndex] then
       if Rng.Rule<>nil then
         if Rng.Rule.DynHighlight=dhBound then
