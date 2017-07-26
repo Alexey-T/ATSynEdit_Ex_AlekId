@@ -93,6 +93,7 @@ type
     procedure SetLexer(AAnalizer: TecSyntAnalyzer);
     procedure SetEnabledLineSeparators(AValue: boolean);
     function GetLexerSuportsDynamicHilite: boolean;
+    function IsDynamicHiliteEnabled: boolean;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -314,7 +315,7 @@ var
   i, j: integer;
   act: boolean;
 begin
-  if not DynamicHiliteActiveNow(AEdit.Strings.Count) then Exit;
+  if not IsDynamicHiliteEnabled then Exit;
 
   for i:= 0 to ListColoredRanges.Count-1 do
   begin
@@ -1034,12 +1035,15 @@ begin
     if Pnt1.Y<0 then Continue;
     if Pnt2.Y<0 then Continue;
 
+    //fill fold ranges
     if not R.Rule.NotCollapsed then
     begin
       SHint:= AnClient.GetCollapsedText(R); //+'/'+R.Rule.GetNamePath;
       DoFoldAdd(Pnt1.X+1, Pnt1.Y, Pnt2.Y, R.Rule.DrawStaple, SHint);
     end;
 
+    //fill ListColoredRanges
+    if IsDynamicHiliteEnabled then
     if R.Rule.DynHighlight<>dhNone then
     begin
       Style:= R.Rule.Style;
@@ -1258,6 +1262,14 @@ begin
       (Rule.HighlightPos in [cpBound, cpRange, cpOutOfRange]) and
       (Rule.DynHighlight in [dhRange, dhRangeNoBound, dhBound]) then exit(true);
   end;
+end;
+
+function TATAdapterEControl.IsDynamicHiliteEnabled: boolean;
+var
+  Ed: TATSynEdit;
+begin
+  Ed:= TATSynEdit(EdList[0]);
+  Result:= DynamicHiliteActiveNow(Ed.Strings.Count);
 end;
 
 procedure TATAdapterEControl.DoParseBegin;
