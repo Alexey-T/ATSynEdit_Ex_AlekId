@@ -390,8 +390,8 @@ begin
   for i:= startindex to AnClient.TagCount-1 do
   begin
     token:= AnClient.Tags[i];
-    tokenStart:= Buffer.StrToCaret(token.StartPos);
-    tokenEnd:= Buffer.StrToCaret(token.EndPos);
+    tokenStart:= token.PointStart;
+    tokenEnd:= token.PointEnd;
 
     Dec(tokenStart.x, AX);
     Dec(tokenEnd.x, AX);
@@ -559,8 +559,8 @@ end;
 procedure TATAdapterEControl.GetTokenProps(token: TecSyntToken;
   out APntFrom, APntTo: TPoint; out ATokenString, ATokenStyle: string);
 begin
-  APntFrom:= Buffer.StrToCaret(token.StartPos);
-  APntTo:= Buffer.StrToCaret(token.EndPos);
+  APntFrom:= token.PointStart;
+  APntTo:= token.PointEnd;
   ATokenString:= Utf8Encode(Buffer.SubString(token.StartPos+1, token.EndPos-token.StartPos));
   if Assigned(token.Style) then
     ATokenStyle:= token.Style.DisplayName
@@ -726,7 +726,6 @@ end;
 procedure TATAdapterEControl.TreeGetPositionOfRange(R: TecTextRange; out P1, P2: TPoint);
 var
   tokenStart, tokenEnd: TecSyntToken;
-  Pos1, Pos2: integer;
 begin
   P1:= Point(-1, -1);
   P2:= Point(-1, -1);
@@ -735,10 +734,8 @@ begin
 
   tokenStart:= AnClient.Tags[R.StartIdx];
   tokenEnd:= AnClient.Tags[R.EndIdx];
-  Pos1:= tokenStart.StartPos;
-  Pos2:= tokenEnd.EndPos;
-  P1:= Buffer.StrToCaret(Pos1);
-  P2:= Buffer.StrToCaret(Pos2);
+  P1:= tokenStart.PointStart;
+  P2:= tokenEnd.PointEnd;
 end;
 
 function TATAdapterEControl.TreeGetRangeOfPosition(P: TPoint): TecTextRange;
@@ -1017,8 +1014,8 @@ begin
     tokenEnd:= AnClient.Tags[R.EndIdx];
     Pos1:= tokenStart.StartPos;
     Pos2:= tokenEnd.EndPos;
-    Pnt1:= Buffer.StrToCaret(Pos1);
-    Pnt2:= Buffer.StrToCaret(Pos2);
+    Pnt1:= tokenStart.PointStart;
+    Pnt2:= tokenEnd.PointEnd;
     if Pnt1.Y<0 then Continue;
     if Pnt2.Y<0 then Continue;
 
