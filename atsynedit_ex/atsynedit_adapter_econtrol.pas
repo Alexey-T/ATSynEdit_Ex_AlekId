@@ -115,10 +115,10 @@ type
     //support for syntax-tree
     property TreeBusy: boolean read FBusyTreeUpdate;
     procedure TreeFill(ATree: TTreeView);
-    procedure TreeShowItemForCaret(Tree: TTreeView; P: TPoint);
+    procedure TreeShowItemForCaret(Tree: TTreeView; APos: TPoint);
     function TreeGetPositionOfRange(R: TecTextRange): TPoint;
     procedure TreeGetPositionOfRange(R: TecTextRange; out P1, P2: TPoint);
-    function TreeGetRangeOfPosition(P: TPoint): TecTextRange;
+    function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 
     //sublexers
     function SublexerRangeCount: integer;
@@ -763,7 +763,7 @@ begin
   P2:= tokenEnd.PointEnd;
 end;
 
-function TATAdapterEControl.TreeGetRangeOfPosition(P: TPoint): TecTextRange;
+function TATAdapterEControl.TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 var
   i: integer;
   R: TecTextRange;
@@ -772,7 +772,7 @@ begin
   Result:= nil;
   if AnClient=nil then exit;
 
-  NPos:= Buffer.CaretToStr(P);
+  NPos:= Buffer.CaretToStr(APos);
   NToken:= AnClient.NextTokenAt(NPos);
   if NToken<0 then exit;
 
@@ -817,13 +817,13 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.TreeShowItemForCaret(Tree: TTreeView; P: TPoint);
+procedure TATAdapterEControl.TreeShowItemForCaret(Tree: TTreeView; APos: TPoint);
 var
   R: TecTextRange;
   Node: TTreeNode;
 begin
   if Tree.Items.Count=0 then exit;
-  R:= TreeGetRangeOfPosition(P);
+  R:= TreeGetRangeOfPosition(APos);
   if R=nil then begin {showmessage('r=nil');} exit; end;
   Node:= Tree.Items.FindNodeWithData(R);
   if Node=nil then begin {showmessage('node=nil');} exit; end;
