@@ -23,6 +23,8 @@ uses
 var
   cAdapterTimerDuringAnalyzeInterval: integer = 200;
   cAdapterTimerTicksToInitialUpdate: integer = 2;
+  cAdapterIdleInterval: integer = 500;
+  cAdapterIdleTextSize: integer = 10*1000;
 
 type
   { TATRangeColored }
@@ -52,6 +54,7 @@ type
     Buffer: TATStringBuffer;
     ListColoredRanges: TList;
     TimerDuringAnalyze: TTimer;
+    CurrentIdleInterval: integer;
     FEnabledLineSeparators: boolean;
     FBusyTreeUpdate: boolean;
     FBusyTimer: boolean;
@@ -72,6 +75,7 @@ type
     procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
     procedure DoParseBegin;
     procedure DoParseDone;
+    function GetIdleInterval: integer;
     function GetRangeParent(R: TecTextRange): TecTextRange;
     procedure GetTokenProps(token: TecSyntToken; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
@@ -86,7 +90,7 @@ type
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateSeparators;
     procedure UpdateRangesSublex;
-    procedure UpdateData;
+    procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
     procedure UpdateRangesFold;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
@@ -128,6 +132,7 @@ type
   public
     procedure OnEditorCaretMove(Sender: TObject); override;
     procedure OnEditorChange(Sender: TObject); override;
+    procedure OnEditorIdle(Sender: TObject); override;
     procedure OnEditorCalcHilite(Sender: TObject;
       var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer;
@@ -855,7 +860,7 @@ begin
   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil);
     AnClient.EnabledLineSeparators:= EnabledLineSeparators;
-    UpdateData;
+    UpdateData(true, true);
   end;
 
   if Assigned(FOnLexerChange) then
@@ -867,10 +872,18 @@ end;
 procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateData;
+  //if CurrentIdleInterval=0, OnEditorIdle will not fire, analyze here
+  UpdateData(true, CurrentIdleInterval=0);
 end;
 
-procedure TATAdapterEControl.UpdateData;
+procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
+begin
+  DoCheckEditorList;
+  UpdateData(false, true);
+  UpdateEditors(true, true);
+end;
+
+procedure TATAdapterEControl.UpdateData(AUpdateBuffer, AAnalyze: boolean);
 var
   Ed: TATSynEdit;
   Lens: array of integer;
@@ -878,15 +891,22 @@ var
 begin
   if EdList.Count=0 then Exit;
   if not Assigned(AnClient) then Exit;
+
   Ed:= TATSynEdit(EdList[0]);
 
-  SetLength(Lens, Ed.Strings.Count);
-  for i:= 0 to Length(Lens)-1 do
-    Lens[i]:= Ed.Strings.LinesLen[i];
-  Buffer.Setup(Ed.Strings.TextString_Unicode, Lens);
+  if AUpdateBuffer then
+  begin
+    SetLength(Lens, Ed.Strings.Count);
+    for i:= 0 to Length(Lens)-1 do
+      Lens[i]:= Ed.Strings.LinesLen[i];
+    Buffer.Setup(Ed.Strings.TextString_Unicode, Lens);
+  end;
 
-  DoAnalize(Ed, false);
-  UpdateRanges;
+  if AAnalyze then
+  begin
+    DoAnalize(Ed, false);
+    UpdateRanges;
+  end;
 end;
 
 procedure TATAdapterEControl.UpdateRanges;
@@ -954,6 +974,10 @@ begin
   for i:= 0 to EdList.Count-1 do
   begin
     Ed:= TATSynEdit(EdList[i]);
+
+    CurrentIdleInterval:= GetIdleInterval;
+    Ed.OptIdleInterval:= CurrentIdleInterval;
+
     if AClearCache then
       Ed.InvalidateHilitingCache;
     if ARepaint then
@@ -1321,6 +1345,14 @@ begin
         Application.ProcessMessages;
       end;
   end;
+end;
+
+function TATAdapterEControl.GetIdleInterval: integer;
+begin
+  if Buffer.TextLength < cAdapterIdleTextSize then
+    Result:= 0
+  else
+    Result:= cAdapterIdleInterval;
 end;
 
 end.
