@@ -35,12 +35,13 @@ type
     Token1, Token2: integer;
     Color: TColor;
     Rule: TecTagBlockCondition;
+    SubLexer: boolean;
     Active: array[0..Pred(cMaxStringsClients)] of boolean;
     constructor Create(
       APos1, APos2: TPoint;
       AToken1, AToken2: integer;
       AColor: TColor; ARule: TecTagBlockCondition;
-      ARangeActive: boolean);
+      ASubLexer: boolean);
   end;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
@@ -177,7 +178,7 @@ end;
 
 constructor TATRangeColored.Create(APos1, APos2: TPoint; AToken1,
   AToken2: integer; AColor: TColor; ARule: TecTagBlockCondition;
-  ARangeActive: boolean);
+  ASubLexer: boolean);
 var
   i: integer;
 begin
@@ -187,8 +188,9 @@ begin
   Token2:= AToken2;
   Color:= AColor;
   Rule:= ARule;
+  SubLexer:= ASubLexer;
   for i:= Low(Active) to High(Active) do
-    Active[i]:= ARangeActive;
+    Active[i]:= false;
 end;
 
 { TATAdapterEControl }
@@ -295,6 +297,7 @@ function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
   Rng: TATRangeColored;
+  act: boolean;
   i: integer;
 begin
   Result:= ADefColor;
@@ -303,11 +306,17 @@ begin
   for i:= ListColoredRanges.Count-1 downto 0 do
   begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
-    if not Rng.Active[AEditorIndex] then Continue;
-    if Rng.Rule<>nil then
-      if not (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]) then
-        Continue;
 
+    act:= false;
+    if Rng.SubLexer then
+      act:= true
+    else
+      act:=
+        Rng.Active[AEditorIndex] and
+        Assigned(Rng.Rule) and
+        (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]);
+
+    if act then
     if IsPosInRange(
       APos.X, APos.Y,
       Rng.Pos1.X, Rng.Pos1.Y,
@@ -328,13 +337,11 @@ begin
   for i:= 0 to ListColoredRanges.Count-1 do
   begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
-    if Rng.Rule=nil then
-    begin
-      //range from sublexer, set Active=true
-      act:= true;
-    end
+    if Rng.SubLexer then
+      act:= true
     else
     begin
+      if Rng.Rule=nil then Continue;
       if not (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound, dhBound]) then Continue;
       case Rng.Rule.HighlightPos of
         cpAny:
@@ -1041,7 +1048,6 @@ var
   Style: TecSyntaxFormat;
   SHint: string;
   tokenStart, tokenEnd: TecSyntToken;
-  bRangeActive: boolean;
   i: integer;
 begin
   if not Assigned(AnClient) then Exit;
@@ -1095,14 +1101,6 @@ begin
               //+1 to make range longer, to hilite line to screen end
           end;
 
-          bRangeActive:= false;
-          (*
-          //cannot test: how to test it?
-          if (R.Rule.DynHighlight in [dhRange, dhRangeNoBound, dhBound]) then
-            if R.Rule.HighlightPos=cpAny then
-              bRangeActive:= true;
-              *)
-
           ListColoredRanges.Add(TATRangeColored.Create(
             Pnt1,
             Pnt2,
@@ -1110,7 +1108,7 @@ begin
             R.EndIdx,
             Style.BgColor,
             R.Rule,
-            bRangeActive
+            false
             ));
         end;
     end;
