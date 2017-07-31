@@ -330,6 +330,7 @@ begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
     if Rng.Rule=nil then
     begin
+      //range from sublexer, set Active=true
       act:= true;
     end
     else
