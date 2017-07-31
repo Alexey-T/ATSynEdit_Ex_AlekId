@@ -39,7 +39,8 @@ type
     constructor Create(
       APos1, APos2: TPoint;
       AToken1, AToken2: integer;
-      AColor: TColor; ARule: TecTagBlockCondition);
+      AColor: TColor; ARule: TecTagBlockCondition;
+      ARangeActive: boolean);
   end;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
@@ -174,10 +175,11 @@ end;
 
 { TATRangeColored }
 
-constructor TATRangeColored.Create(
-  APos1, APos2: TPoint;
-  AToken1, AToken2: integer;
-  AColor: TColor; ARule: TecTagBlockCondition);
+constructor TATRangeColored.Create(APos1, APos2: TPoint; AToken1,
+  AToken2: integer; AColor: TColor; ARule: TecTagBlockCondition;
+  ARangeActive: boolean);
+var
+  i: integer;
 begin
   Pos1:= APos1;
   Pos2:= APos2;
@@ -185,7 +187,8 @@ begin
   Token2:= AToken2;
   Color:= AColor;
   Rule:= ARule;
-  FillChar(Active, Sizeof(Active), 0);
+  for i:= Low(Active) to High(Active) do
+    Active[i]:= ARangeActive;
 end;
 
 { TATAdapterEControl }
@@ -1037,6 +1040,7 @@ var
   Style: TecSyntaxFormat;
   SHint: string;
   tokenStart, tokenEnd: TecSyntToken;
+  bRangeActive: boolean;
   i: integer;
 begin
   if not Assigned(AnClient) then Exit;
@@ -1090,13 +1094,23 @@ begin
               //+1 to make range longer, to hilite line to screen end
           end;
 
+          bRangeActive:= false;
+          (*
+          //cannot test: how to test it?
+          if (R.Rule.DynHighlight in [dhRange, dhRangeNoBound, dhBound]) then
+            if R.Rule.HighlightPos=cpAny then
+              bRangeActive:= true;
+              *)
+
           ListColoredRanges.Add(TATRangeColored.Create(
             Pnt1,
             Pnt2,
             R.StartIdx,
             R.EndIdx,
             Style.BgColor,
-            R.Rule));
+            R.Rule,
+            bRangeActive
+            ));
         end;
     end;
   end;
@@ -1127,7 +1141,9 @@ begin
         -1,
         -1,
         Style.BgColor,
-        nil));
+        nil,
+        true
+        ));
   end;
 end;
 
