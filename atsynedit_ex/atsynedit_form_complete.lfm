@@ -30,5 +30,6 @@ object FormATSynEditComplete: TFormATSynEditComplete
     ParentColor = False
     OnClick = ListClick
     OnDrawItem = ListDrawItem
+    OwnerDrawn = True
   end
 end
