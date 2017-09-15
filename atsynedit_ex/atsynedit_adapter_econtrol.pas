@@ -35,13 +35,13 @@ type
     Token1, Token2: integer;
     Color: TColor;
     Rule: TecTagBlockCondition;
-    SubLexer: boolean;
+    ActiveAlways: boolean;
     Active: array[0..Pred(cMaxStringsClients)] of boolean;
     constructor Create(
       APos1, APos2: TPoint;
       AToken1, AToken2: integer;
       AColor: TColor; ARule: TecTagBlockCondition;
-      ASubLexer: boolean);
+      AActiveAlways: boolean);
   end;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
@@ -178,7 +178,7 @@ end;
 
 constructor TATRangeColored.Create(APos1, APos2: TPoint; AToken1,
   AToken2: integer; AColor: TColor; ARule: TecTagBlockCondition;
-  ASubLexer: boolean);
+  AActiveAlways: boolean);
 var
   i: integer;
 begin
@@ -188,7 +188,7 @@ begin
   Token2:= AToken2;
   Color:= AColor;
   Rule:= ARule;
-  SubLexer:= ASubLexer;
+  ActiveAlways:= AActiveAlways;
   for i:= Low(Active) to High(Active) do
     Active[i]:= false;
 end;
@@ -308,7 +308,7 @@ begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
 
     act:= false;
-    if Rng.SubLexer then
+    if Rng.ActiveAlways then
       act:= true
     else
       act:=
@@ -337,7 +337,7 @@ begin
   for i:= 0 to ListColoredRanges.Count-1 do
   begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
-    if Rng.SubLexer then
+    if Rng.ActiveAlways then
       act:= true
     else
     begin
@@ -1108,7 +1108,7 @@ begin
             R.EndIdx,
             Style.BgColor,
             R.Rule,
-            false
+            (R.Rule.HighlightPos=cpAny)
             ));
         end;
     end;
