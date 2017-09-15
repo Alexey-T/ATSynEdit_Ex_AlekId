@@ -1082,12 +1082,12 @@ begin
     //fill fold ranges
     if not R.Rule.NotCollapsed then
     begin
-      SHint:= AnClient.GetCollapsedText(R); //+'/'+R.Rule.GetNamePath;
+      SHint:= UTF8Encode(AnClient.GetCollapsedText(R)); //+'/'+R.Rule.GetNamePath;
       DoFoldAdd(Pnt1.X+1, Pnt1.Y, Pnt2.Y, R.Rule.DrawStaple, SHint);
     end;
 
     //fill ListColoredRanges
-    if IsDynamicHiliteEnabled then
+    //not only if DymamicHilite enabled (e.g. AutoIt has always hilited blocks)
     if R.Rule.DynHighlight<>dhNone then
     begin
       Style:= R.Rule.Style;
