@@ -10,7 +10,7 @@
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Description Value="ATSynEdit_Ex; package additional to ATSynEdit, to avoid build errors"/>
+    <Description Value="Package additional to ATSynEdit (to avoid build errors), contains syntax highlight adapters"/>
     <License Value="MPL 2.0 or LGPL"/>
     <Version Major="1"/>
     <Files Count="5">
@@ -37,13 +37,13 @@
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="econtrol_package"/>
+        <PackageName Value="atflatcontrols_package"/>
       </Item1>
       <Item2>
-        <PackageName Value="atsynedit_package"/>
+        <PackageName Value="econtrol_package"/>
       </Item2>
       <Item3>
-        <PackageName Value="atbuttons_package"/>
+        <PackageName Value="atsynedit_package"/>
       </Item3>
       <Item4>
         <PackageName Value="FCL"/>
