@@ -18,7 +18,7 @@ uses
   ATStringProc,
   ATStringProc_TextBuffer,
   ATStrings,
-  ecSyntAnal;
+  ec_SyntAnal;
 
 var
   cAdapterTimerDuringAnalyzeInterval: integer = 200;
