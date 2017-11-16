@@ -684,6 +684,8 @@ begin
 end;
 
 procedure TATAdapterEControl.TreeFill(ATree: TTreeView);
+const
+  cProgressRangeCount = 5000;
 var
   R, RangeParent: TecTextRange;
   NodeParent, NodeGroup: TTreeNode;
@@ -699,6 +701,12 @@ begin
 
     for i:= 0 to AnClient.RangeCount-1 do
     begin
+      if (i mod cProgressRangeCount)=0 then
+      begin
+        Application.ProcessMessages;
+        if Application.Terminated then exit;
+      end;
+
       R:= AnClient.Ranges[i];
       if R.Rule=nil then Continue;
       if not R.Rule.DisplayInTree then Continue;
