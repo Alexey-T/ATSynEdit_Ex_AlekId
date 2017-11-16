@@ -112,6 +112,7 @@ type
     procedure DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
     procedure DoAnalyzeFromLine(ALine: integer; AWait: boolean);
     procedure Stop;
+    procedure StopTreeUpdate;
 
     //tokens
     procedure GetTokenWithIndex(AIndex: integer; out APntFrom, APntTo: TPoint; out
@@ -590,9 +591,13 @@ begin
     Result:= AnClient.AnalyzerAtPos(Buffer.CaretToStr(Pnt));
 end;
 
-procedure TATAdapterEControl.Stop;
+procedure TATAdapterEControl.StopTreeUpdate;
 begin
   FStopTreeUpdate:= true;
+end;
+
+procedure TATAdapterEControl.Stop;
+begin
   TimerDuringAnalyze.Enabled:= false;
   while FBusyTreeUpdate do begin Sleep(50); end;
   while FBusyTimer do begin Sleep(50); end;
