@@ -60,6 +60,7 @@ type
     FEnabledLineSeparators: boolean;
     FBusyTreeUpdate: boolean;
     FBusyTimer: boolean;
+    FStopTreeUpdate: boolean;
     FParsePausePassed: boolean;
     FParseTicks: integer;
     FOnLexerChange: TNotifyEvent;
@@ -146,9 +147,6 @@ type
     property OnParseBegin: TNotifyEvent read FOnParseBegin write FOnParseBegin;
     property OnParseDone: TNotifyEvent read FOnParseDone write FOnParseDone;
   end;
-
-var
-  EControlTreeUpdateMustStop: boolean = false;
 
 
 implementation
@@ -594,6 +592,7 @@ end;
 
 procedure TATAdapterEControl.Stop;
 begin
+  FStopTreeUpdate:= true;
   TimerDuringAnalyze.Enabled:= false;
   while FBusyTreeUpdate do begin Sleep(50); end;
   while FBusyTimer do begin Sleep(50); end;
@@ -697,7 +696,7 @@ var
   NodeData: pointer;
   i: integer;
 begin
-  EControlTreeUpdateMustStop:= false;
+  FStopTreeUpdate:= false;
   FBusyTreeUpdate:= true;
   //ATree.Items.BeginUpdate;
 
@@ -707,7 +706,7 @@ begin
 
     for i:= 0 to AnClient.RangeCount-1 do
     begin
-      if EControlTreeUpdateMustStop then exit;
+      if FStopTreeUpdate then exit;
       if (i mod cProgressRangeCount)=0 then
       begin
         Application.ProcessMessages;
@@ -1341,6 +1340,7 @@ begin
     FOnParseBegin(Self);
   FParsePausePassed:= false;
   FParseTicks:= 0;
+  FStopTreeUpdate:= false;
 end;
 
 procedure TATAdapterEControl.DoParseDone;
