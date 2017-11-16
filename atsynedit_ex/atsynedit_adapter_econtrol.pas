@@ -147,6 +147,10 @@ type
     property OnParseDone: TNotifyEvent read FOnParseDone write FOnParseDone;
   end;
 
+var
+  EControlTreeUpdateMustStop: boolean = false;
+
+
 implementation
 
 uses Math;
@@ -693,14 +697,17 @@ var
   NodeData: pointer;
   i: integer;
 begin
+  EControlTreeUpdateMustStop:= false;
   FBusyTreeUpdate:= true;
   //ATree.Items.BeginUpdate;
+
   try
     ATree.Items.Clear;
     if AnClient=nil then exit;
 
     for i:= 0 to AnClient.RangeCount-1 do
     begin
+      if EControlTreeUpdateMustStop then exit;
       if (i mod cProgressRangeCount)=0 then
       begin
         Application.ProcessMessages;
