@@ -11,9 +11,7 @@ uses
 type
   TATLiteLexerRule = class
   public
-    Name: string;
-    Regex: string;
-    Style: string;
+    Name, Regex, Style: string;
   end;
 
 type
@@ -40,15 +38,13 @@ implementation
 constructor TATLiteLexer.Create;
 begin
   inherited;
-  LexerName:= '?';
-  CaseSens:= false;
   FileTypes:= TStringList.Create;
-  FileTypes.LineBreak:= ' ';
   Rules:= TList.Create;
 end;
 
 destructor TATLiteLexer.Destroy;
 begin
+  Clear;
   FreeAndNil(FileTypes);
   FreeAndNil(Rules);
   inherited;
@@ -95,7 +91,7 @@ begin
 
     LexerName:= ChangeFileExt(ExtractFileName(AFilename), '');
     CaseSens:= c.GetValue('/case_sens', false);
-    c.GetValue('/file_types', FileTypes, '');
+    c.GetValue('/files', FileTypes, '');
 
     c.EnumSubKeys('/rules', keys);
     for i:= 0 to keys.Count-1 do
@@ -123,10 +119,11 @@ const
 var
   i: integer;
 begin
+  FileTypes.LineBreak:= ' ';
   Result:=
     'name: '+LexerName+#10+
     'case_sens: '+cBool[CaseSens]+#10+
-    'file_types: '+FileTypes.Text+#10+
+    'files: '+FileTypes.Text+#10+
     'rules:';
   for i:= 0 to Rules.Count-1 do
     with GetRule(i) do
