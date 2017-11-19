@@ -12,13 +12,13 @@ type
   { TForm1 }
 
   TForm1 = class(TForm)
-    Button1: TButton;
+    btnLoadLexer: TButton;
     Memo1: TMemo;
-    procedure Button1Click(Sender: TObject);
+    procedure btnLoadLexerClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
     Lexer: TATLiteLexer;
-    ListStyles: TStringList;
+    Styles: TStringList;
     procedure LexerGetStyleHash(Sender: TObject; const AStyle: string; var AHash: integer);
   public
 
@@ -33,7 +33,7 @@ implementation
 
 { TForm1 }
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TForm1.btnLoadLexerClick(Sender: TObject);
 begin
   Lexer.LoadFromFile(ExtractFilePath(Application.ExeName)+'test_lexer.json');
   Memo1.Lines.Clear;
@@ -45,19 +45,19 @@ begin
   Lexer:= TATLiteLexer.Create;
   Lexer.OnGetStyleHash:= @LexerGetStyleHash;
 
-  ListStyles:= TStringList.Create;
-  ListStyles.Add('Id');
-  ListStyles.Add('IdKeyword');
-  ListStyles.Add('Number');
-  ListStyles.Add('String');
-  ListStyles.Add('Symbol');
-  ListStyles.Add('Comment');
+  Styles:= TStringList.Create;
+  Styles.Add('Id');
+  Styles.Add('IdKeyword');
+  Styles.Add('Number');
+  Styles.Add('String');
+  Styles.Add('Symbol');
+  Styles.Add('Comment');
 end;
 
 procedure TForm1.LexerGetStyleHash(Sender: TObject; const AStyle: string;
   var AHash: integer);
 begin
-  AHash:= ListStyles.IndexOf(AStyle);
+  AHash:= Styles.IndexOf(AStyle);
 end;
 
 end.
