@@ -1,0 +1,26 @@
+{
+  "files": ["*.xml", "*.xsl", "*.xslt"],
+  "case_sens": False,
+  "rules": {
+    "cmt": {
+      "regex": "//.*",
+      "style": "Comment"
+    },
+    "keyw": {
+      "regex": "for|if|else",
+      "style": "IdKeyword"
+    },
+    "id": {
+      "regex": "[a-z_]\\w*",
+      "style": "Id"
+    },
+    "num": {
+      "regex": "\\d+(\\.\\d+)?",
+      "style": "Number"
+    },
+    "sym": {
+      "regex": "[\\-\\+\\*/\\(\\)\\[\\]\\{\\}\\|\\\\\\.,:;=`~!@\\#\\$%\\^&\\?<>]",
+      "style": "Symbol"
+    }
+  }
+}

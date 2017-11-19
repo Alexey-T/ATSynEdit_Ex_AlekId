@@ -12,7 +12,11 @@ type
   TATLiteLexerRule = class
   public
     Name, Regex, Style: string;
+    StyleHash: integer;
   end;
+
+type
+  TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyle: string; out AHash: integer);
 
 type
   { TATLiteLexer }
@@ -23,6 +27,7 @@ type
     CaseSens: boolean;
     FileTypes: TStringList;
     Rules: TList;
+    OnGetStyleHash: TATLiteLexer_GetStyleHash;
     constructor Create; virtual;
     destructor Destroy; override;
     procedure LoadFromFile(const AFilename: string);
@@ -127,7 +132,7 @@ begin
     'rules:';
   for i:= 0 to Rules.Count-1 do
     with GetRule(i) do
-      Result:= Result+#10+Format('(name: "%s", regex: "%s", style: "%s")', [Name, Regex, Style]);
+      Result:= Result+#10+Format('(name: "%s", re: "%s", st: "%s", st_n: %d)', [Name, Regex, Style, StyleHash]);
 end;
 
 
