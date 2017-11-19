@@ -16,7 +16,7 @@ type
   end;
 
 type
-  TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyle: string; out AHash: integer);
+  TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyle: string; var AHash: integer) of object;
 
 type
   { TATLiteLexer }
@@ -102,14 +102,16 @@ begin
     for i:= 0 to keys.Count-1 do
     begin
       s_name:= keys[i];
-      s_regex:= c.GetValue('/rules/'+keys[i]+'/regex', '');
-      s_style:= c.GetValue('/rules/'+keys[i]+'/style', '');
+      s_regex:= c.GetValue('/rules/'+s_name+'/regex', '');
+      s_style:= c.GetValue('/rules/'+s_name+'/style', '');
       if (s_name='') or (s_regex='') or (s_style='') then Continue;
 
       rule:= TATLiteLexerRule.Create;
       rule.Name:= s_name;
       rule.Regex:= s_regex;
       rule.Style:= s_style;
+      if Assigned(OnGetStyleHash) then
+        OnGetStyleHash(Self, rule.Style, rule.StyleHash);
       Rules.Add(rule);
     end;
   finally
