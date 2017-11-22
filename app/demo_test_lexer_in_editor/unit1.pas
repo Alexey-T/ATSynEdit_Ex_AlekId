@@ -11,7 +11,7 @@ uses
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
   ATSynEdit_Lexer_Lite,
-  ATSynEdit_RegExpr;
+  ec_RegExpr;
 
 type
   { TForm1 }
@@ -28,7 +28,7 @@ type
     ed: TATSynEdit;
     Lexer: TATLiteLexer;
     Styles: TStringList;
-    RegexObj: TRegExpr;
+    RegexObj: TecRegExpr;
     procedure LexerGetStyleHash(Sender: TObject; const AStyle: string;
       var AHash: integer);
     procedure DoOpen(const fn: string);
@@ -74,7 +74,7 @@ begin
 
   Lexer.LoadFromFile(ExtractFilePath(Application.ExeName)+'test_lexer.json');
 
-  RegexObj:= TRegExpr.Create;
+  RegexObj:= TecRegExpr.Create;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -105,8 +105,8 @@ begin
   AHash:= Styles.IndexOf(AStyle);
 end;
 
-function SRegexFind(Obj: TRegExpr;
-  const ARegex: string;
+function SRegexFind(Obj: TecRegExpr;
+  const ARegex, AInputStr: UnicodeString;
   AFromPos: integer;
   out AFoundLen: integer): boolean;
 var
@@ -121,11 +121,8 @@ begin
 
   try
     Obj.Expression:= ARegex;
-    Result:= Obj.ExecPos(AFromPos);
-    if Result and (Obj.MatchPos[0]<>AFromPos) then
-      Result:= false;
-    if Result then
-      AFoundLen:= Obj.MatchLen[0];
+    AFoundLen:= Obj.MatchLength(AInputStr, AFromPos);
+    Result:= AFoundLen>0;
   except
     Result:= false;
   end;
@@ -146,7 +143,6 @@ begin
   bLastFound:= false;
 
   RegexObj.ModifierI:= not Lexer.CaseSens;
-  RegexObj.InputString:= EdLine;
 
   repeat
     if NPos>Length(EdLine) then Break;
@@ -157,7 +153,7 @@ begin
       for IndexRule:= 0 to Lexer.Rules.Count-1 do
       begin
         Rule:= Lexer.GetRule(IndexRule);
-        if SRegexFind(RegexObj, Rule.Regex, NPos, NLen) then
+        if SRegexFind(RegexObj, Rule.Regex, EdLine, NPos, NLen) then
         begin
           bRuleFound:= true;
           Break;
@@ -185,7 +181,7 @@ begin
       Inc(NParts);
       AParts[NParts-1].Offset:= NPos-1;
       AParts[NParts-1].Len:= NLen;
-      AParts[NParts-1].ColorBG:= clNone;
+      AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
       ApplyStyleToPart(Rule.StyleHash, AParts[NParts-1]);
       Inc(NPos, NLen);
     end;
