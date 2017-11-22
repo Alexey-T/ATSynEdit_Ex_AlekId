@@ -5,8 +5,11 @@ unit atsynedit_lexer_lite;
 interface
 
 uses
-  Classes, SysUtils, Dialogs,
-  jsonConf;
+  Classes, SysUtils, Graphics, Dialogs,
+  jsonConf,
+  ATSynEdit,
+  ATSynEdit_CanvasProc,
+  ec_RegExpr;
 
 type
   TATLiteLexerRule = class
@@ -17,26 +20,49 @@ type
 
 type
   TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyle: string; var AHash: integer) of object;
+  TATLiteLexer_ApplyStyle = procedure (Sender: TObject; const AHash: integer; var APart: TATLinePart) of object;
 
 type
   { TATLiteLexer }
 
   TATLiteLexer = class
+  private
+    RegexObj: TecRegExpr;
   public
     LexerName: string;
     CaseSens: boolean;
     FileTypes: TStringList;
     Rules: TList;
     OnGetStyleHash: TATLiteLexer_GetStyleHash;
+    OnApplyStyle: TATLiteLexer_ApplyStyle;
     constructor Create; virtual;
     destructor Destroy; override;
     procedure LoadFromFile(const AFilename: string);
     procedure Clear;
     function GetRule(AIndex: integer): TATLiteLexerRule;
     function GetDump: string;
+    procedure EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
+      ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
   end;
 
 implementation
+
+function SRegexFindLen(Obj: TecRegExpr;
+  const ARegex, AInputStr: UnicodeString;
+  AFromPos: integer): integer;
+var
+  i: integer;
+begin
+  Result:= 0;
+  if ARegex='' then exit;
+
+  Obj.ModifierS:= false; //don't catch all text by .*
+  Obj.ModifierM:= true; //allow to work with ^$
+
+  Obj.Expression:= ARegex;
+  Result:= Obj.MatchLength(AInputStr, AFromPos);
+end;
+
 
 { TATLiteLexer }
 
@@ -45,11 +71,13 @@ begin
   inherited;
   FileTypes:= TStringList.Create;
   Rules:= TList.Create;
+  RegexObj:= TecRegExpr.Create;
 end;
 
 destructor TATLiteLexer.Destroy;
 begin
   Clear;
+  FreeAndNil(RegexObj);
   FreeAndNil(FileTypes);
   FreeAndNil(Rules);
   inherited;
@@ -137,6 +165,72 @@ begin
       Result:= Result+#10+Format('(name: "%s", re: "%s", st: "%s", st_n: %d)', [Name, Regex, Style, StyleHash]);
 end;
 
+
+procedure TATLiteLexer.EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
+  ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
+var
+  Ed: TATSynEdit;
+  EdLine: UnicodeString;
+  ch: WideChar;
+  NParts, NPos, NLen, IndexRule: integer;
+  Rule: TATLiteLexerRule;
+  bLastFound, bRuleFound: boolean;
+begin
+  Ed:= Sender as TATSynEdit;
+  EdLine:= Copy(Ed.Strings.Lines[ALineIndex], ACharIndex, ALineLen);
+  NParts:= 0;
+  NPos:= 1;
+  bLastFound:= false;
+
+  RegexObj.ModifierI:= not CaseSens;
+
+  repeat
+    if NPos>Length(EdLine) then Break;
+    bRuleFound:= false;
+
+    ch:= EdLine[NPos];
+    if (ch<>' ') and (ch<>#9) then
+      for IndexRule:= 0 to Rules.Count-1 do
+      begin
+        Rule:= GetRule(IndexRule);
+        NLen:= SRegexFindLen(RegexObj, Rule.Regex, EdLine, NPos);
+        if NLen>0 then
+        begin
+          bRuleFound:= true;
+          Break;
+        end;
+      end;
+
+    if not bRuleFound then
+    begin
+      if (NParts=0) or (bLastFound) then
+      begin
+        Inc(NParts);
+        AParts[NParts-1].Offset:= NPos-1;
+        AParts[NParts-1].Len:= 1;
+      end
+      else
+      begin
+        Inc(AParts[NParts-1].Len);
+      end;
+      AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
+      AParts[NParts-1].ColorFont:= clBlack;
+      Inc(NPos);
+    end
+    else
+    begin
+      Inc(NParts);
+      AParts[NParts-1].Offset:= NPos-1;
+      AParts[NParts-1].Len:= NLen;
+      AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
+      if Assigned(OnApplyStyle) then
+        OnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
+      Inc(NPos, NLen);
+    end;
+
+    bLastFound:= bRuleFound;
+  until false;
+end;
 
 end.
 
