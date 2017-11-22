@@ -105,27 +105,20 @@ begin
   AHash:= Styles.IndexOf(AStyle);
 end;
 
-function SRegexFind(Obj: TecRegExpr;
+function SRegexFindLen(Obj: TecRegExpr;
   const ARegex, AInputStr: UnicodeString;
-  AFromPos: integer;
-  out AFoundLen: integer): boolean;
+  AFromPos: integer): integer;
 var
   i: integer;
 begin
-  Result:= false;
-  AFoundLen:= 0;
+  Result:= 0;
   if ARegex='' then exit;
 
   Obj.ModifierS:= false; //don't catch all text by .*
   Obj.ModifierM:= true; //allow to work with ^$
 
-  try
-    Obj.Expression:= ARegex;
-    AFoundLen:= Obj.MatchLength(AInputStr, AFromPos);
-    Result:= AFoundLen>0;
-  except
-    Result:= false;
-  end;
+  Obj.Expression:= ARegex;
+  Result:= Obj.MatchLength(AInputStr, AFromPos);
 end;
 
 procedure TForm1.EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
@@ -153,7 +146,8 @@ begin
       for IndexRule:= 0 to Lexer.Rules.Count-1 do
       begin
         Rule:= Lexer.GetRule(IndexRule);
-        if SRegexFind(RegexObj, Rule.Regex, EdLine, NPos, NLen) then
+        NLen:= SRegexFindLen(RegexObj, Rule.Regex, EdLine, NPos);
+        if NLen>0 then
         begin
           bRuleFound:= true;
           Break;
