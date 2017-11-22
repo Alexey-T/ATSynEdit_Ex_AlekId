@@ -141,13 +141,14 @@ var
   EdLine: UnicodeString;
   NParts, NPos, NLen, IndexRule: integer;
   Rule: TATLiteLexerRule;
-  bRuleFound: boolean;
+  bLastFound, bRuleFound: boolean;
 begin
   EdLine:= Copy(ed.Strings.Lines[ALineIndex], ACharIndex, ALineLen);
   NParts:= 0;
   NPos:= 1;
 
   RegexObj.ModifierI:= not Lexer.CaseSens;
+  bLastFound:= false;
 
   repeat
     if NPos>Length(EdLine) then Break;
@@ -165,10 +166,17 @@ begin
 
     if not bRuleFound then
     begin
-      Inc(NParts);
-      AParts[NParts-1].Offset:= NPos-1;
-      AParts[NParts-1].Len:= 1;
-      AParts[NParts-1].ColorBG:= clNone;
+      if (NParts=0) or (bLastFound) then
+      begin
+        Inc(NParts);
+        AParts[NParts-1].Offset:= NPos-1;
+        AParts[NParts-1].Len:= 1;
+      end
+      else
+      begin
+        Inc(AParts[NParts-1].Len);
+      end;
+      AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
       AParts[NParts-1].ColorFont:= clBlack;
       Inc(NPos);
     end
@@ -184,6 +192,8 @@ begin
         );
       Inc(NPos, NLen);
     end;
+
+    bLastFound:= bRuleFound;
   until false;
 end;
 
