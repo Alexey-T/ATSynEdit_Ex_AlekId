@@ -11,7 +11,7 @@ uses
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
   ATSynEdit_Lexer_Lite,
-  RegExpr;
+  ATSynEdit_RegExpr;
 
 type
   { TForm1 }
@@ -34,8 +34,7 @@ type
     procedure DoOpen(const fn: string);
     procedure EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
-    procedure GetColorsOfStyle(AStyleIndex: integer; out AColorFont: TColor; out
-      ABold: ByteBool);
+    procedure ApplyStyleToPart(AStyleIndex: integer; var APart: TATLinePart);
   public
     { public declarations }
   end;
@@ -107,7 +106,7 @@ begin
 end;
 
 function SRegexFind(Obj: TRegExpr;
-  const ARegex, AInputStr: string;
+  const ARegex: string;
   AFromPos: integer;
   out AFoundLen: integer): boolean;
 var
@@ -115,16 +114,13 @@ var
 begin
   Result:= false;
   AFoundLen:= 0;
-
   if ARegex='' then exit;
-  if AInputStr='' then exit;
 
   Obj.ModifierS:= false; //don't catch all text by .*
   Obj.ModifierM:= true; //allow to work with ^$
 
   try
     Obj.Expression:= ARegex;
-    Obj.InputString:= AInputStr;
     Result:= Obj.ExecPos(AFromPos);
     if Result and (Obj.MatchPos[0]<>AFromPos) then
       Result:= false;
@@ -147,9 +143,10 @@ begin
   EdLine:= Copy(ed.Strings.Lines[ALineIndex], ACharIndex, ALineLen);
   NParts:= 0;
   NPos:= 1;
+  bLastFound:= false;
 
   RegexObj.ModifierI:= not Lexer.CaseSens;
-  bLastFound:= false;
+  RegexObj.InputString:= EdLine;
 
   repeat
     if NPos>Length(EdLine) then Break;
@@ -160,7 +157,7 @@ begin
       for IndexRule:= 0 to Lexer.Rules.Count-1 do
       begin
         Rule:= Lexer.GetRule(IndexRule);
-        if SRegexFind(RegexObj, Rule.Regex, EdLine, NPos, NLen) then
+        if SRegexFind(RegexObj, Rule.Regex, NPos, NLen) then
         begin
           bRuleFound:= true;
           Break;
@@ -189,10 +186,7 @@ begin
       AParts[NParts-1].Offset:= NPos-1;
       AParts[NParts-1].Len:= NLen;
       AParts[NParts-1].ColorBG:= clNone;
-      GetColorsOfStyle(Rule.StyleHash,
-        AParts[NParts-1].ColorFont,
-        AParts[NParts-1].FontBold
-        );
+      ApplyStyleToPart(Rule.StyleHash, AParts[NParts-1]);
       Inc(NPos, NLen);
     end;
 
@@ -200,24 +194,23 @@ begin
   until false;
 end;
 
-procedure TForm1.GetColorsOfStyle(AStyleIndex: integer;
-  out AColorFont: TColor; out ABold: ByteBool);
+procedure TForm1.ApplyStyleToPart(AStyleIndex: integer; var APart: TATLinePart);
 begin
-{
-Styles.Add('Id');
-Styles.Add('IdKeyword');
-Styles.Add('Number');
-Styles.Add('String');
-Styles.Add('Symbol');
-Styles.Add('Comment');
-}
+  {
+  Styles.Add('Id');
+  Styles.Add('IdKeyword');
+  Styles.Add('Number');
+  Styles.Add('String');
+  Styles.Add('Symbol');
+  Styles.Add('Comment');
+  }
   case AStyleIndex of
-    0: begin AColorFont:= clBlack; ABold:= false; end;
-    1: begin AColorFont:= clBlack; ABold:= true;  end;
-    2: begin AColorFont:= clNavy; ABold:= true;  end;
-    3: begin AColorFont:= clTeal; ABold:= false;  end;
-    4: begin AColorFont:= clRed; ABold:= false;  end;
-    5: begin AColorFont:= clGray; ABold:= false;  end;
+    0: begin APart.ColorFont:= clBlack; APart.FontBold:= false; end;
+    1: begin APart.ColorFont:= clBlack; APart.FontBold:= true; end;
+    2: begin APart.ColorFont:= clNavy; APart.FontBold:= true;  end;
+    3: begin APart.ColorFont:= clTeal; APart.FontBold:= false;  end;
+    4: begin APart.ColorFont:= clRed; APart.FontBold:= false;  end;
+    5: begin APart.ColorFont:= clGray; APart.FontBold:= false; APart.FontItalic:= true;  end;
   end;
 end;
 
