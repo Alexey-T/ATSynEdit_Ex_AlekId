@@ -10,7 +10,7 @@ uses
   ATSynEdit,
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
-  ATSynEdit_Lexer_Lite;
+  atsynedit_adapter_litelexer;
 
 type
   { TForm1 }

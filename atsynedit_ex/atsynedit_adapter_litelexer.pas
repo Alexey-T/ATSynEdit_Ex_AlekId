@@ -1,4 +1,4 @@
-unit atsynedit_lexer_lite;
+unit atsynedit_adapter_litelexer;
 
 {$mode objfpc}{$H+}
 

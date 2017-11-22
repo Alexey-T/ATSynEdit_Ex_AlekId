@@ -35,8 +35,8 @@
         <UnitName Value="ATSynEdit_Form_Complete_SynWrite"/>
       </Item5>
       <Item6>
-        <Filename Value="atsynedit_lexer_lite.pas"/>
-        <UnitName Value="atsynedit_lexer_lite"/>
+        <Filename Value="atsynedit_adapter_litelexer.pas"/>
+        <UnitName Value="atsynedit_adapter_litelexer"/>
       </Item6>
     </Files>
     <RequiredPkgs Count="4">

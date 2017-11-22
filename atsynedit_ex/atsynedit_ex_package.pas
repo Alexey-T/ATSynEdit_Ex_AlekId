@@ -10,7 +10,7 @@ interface
 uses
   ATSynEdit_Adapter_EControl, ATSynEdit_Form_Complete, 
   ATSynEdit_Form_Complete_CSS, ATSynEdit_Form_Complete_HTML, 
-  ATSynEdit_Form_Complete_SynWrite, atsynedit_lexer_lite;
+  ATSynEdit_Form_Complete_SynWrite, atsynedit_adapter_litelexer;
 
 implementation
 
