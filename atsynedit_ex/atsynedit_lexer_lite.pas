@@ -19,8 +19,8 @@ type
   end;
 
 type
-  TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyle: string; var AHash: integer) of object;
-  TATLiteLexer_ApplyStyle = procedure (Sender: TObject; const AHash: integer; var APart: TATLinePart) of object;
+  TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyleName: string; var AStyleHash: integer) of object;
+  TATLiteLexer_ApplyStyle = procedure (Sender: TObject; const AStyleHash: integer; var APart: TATLinePart) of object;
 
 type
   { TATLiteLexer }
@@ -28,13 +28,13 @@ type
   TATLiteLexer = class
   private
     RegexObj: TecRegExpr;
+    FOnGetStyleHash: TATLiteLexer_GetStyleHash;
+    FOnApplyStyle: TATLiteLexer_ApplyStyle;
   public
     LexerName: string;
     CaseSens: boolean;
     FileTypes: TStringList;
     Rules: TList;
-    OnGetStyleHash: TATLiteLexer_GetStyleHash;
-    OnApplyStyle: TATLiteLexer_ApplyStyle;
     constructor Create; virtual;
     destructor Destroy; override;
     procedure LoadFromFile(const AFilename: string);
@@ -43,6 +43,8 @@ type
     function GetDump: string;
     procedure EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
+    property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
+    property OnApplyStyle: TATLiteLexer_ApplyStyle read FOnApplyStyle write FOnApplyStyle;
   end;
 
 implementation
@@ -138,8 +140,8 @@ begin
       rule.Name:= s_name;
       rule.Regex:= s_regex;
       rule.Style:= s_style;
-      if Assigned(OnGetStyleHash) then
-        OnGetStyleHash(Self, rule.Style, rule.StyleHash);
+      if Assigned(FOnGetStyleHash) then
+        FOnGetStyleHash(Self, rule.Style, rule.StyleHash);
       Rules.Add(rule);
     end;
   finally
@@ -223,8 +225,8 @@ begin
       AParts[NParts-1].Offset:= NPos-1;
       AParts[NParts-1].Len:= NLen;
       AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
-      if Assigned(OnApplyStyle) then
-        OnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
+      if Assigned(FOnApplyStyle) then
+        FOnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
       Inc(NPos, NLen);
     end;
 
