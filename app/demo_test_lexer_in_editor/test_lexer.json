@@ -1,0 +1,34 @@
+{
+  "files": ["*.xml", "*.xsl", "*.xslt"],
+  "case_sens": False,
+  "rules": {
+    "cmt": {
+      "regex": "//.*",
+      "style": "Comment"
+    },
+    "cmt2": {
+      "regex": "\\{.+?\\}",
+      "style": "Comment"
+    },
+    "keyw": {
+      "regex": "\\b(absolute|abstract|and|array|as|asm|begin|case|cdecl|class|const|constructor|contains|default|destructor|dispinterface|div|do|downto|dynamic|else|end|except|exports|external|file|finalization|finally|for|function|generic|goto|if|implementation|in|inherited|initialization|inline|interface|is|label|library|mod|nil|not|object|of|or|out|overload|override|package|packed|pascal|private|procedure|program|property|protected|public|published|raise|read|record|register|repeat|requires|resourcestring|safecall|self|set|shl|shr|specialize|stdcall|strict|string|then|threadvar|to|try|type|unit|until|uses|var|virtual|while|with|write|xor)\\b",
+      "style": "IdKeyword"
+    },
+    "id": {
+      "regex": "[a-z_]\\w*",
+      "style": "Id"
+    },
+    "num": {
+      "regex": "\\d+(\\.\\d+)?",
+      "style": "Number"
+    },
+    "str": {
+      "regex": "\\'.*?\\'",
+      "style": "String"
+    },
+    "sym": {
+      "regex": "[\\-\\+\\*/\\(\\)\\[\\]\\{\\}\\|\\\\\\.,:;=`~!@\\#\\$%\\^&\\?<>]",
+      "style": "Symbol"
+    }
+  }
+}

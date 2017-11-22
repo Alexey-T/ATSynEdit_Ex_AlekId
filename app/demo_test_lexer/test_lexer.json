@@ -6,8 +6,12 @@
       "regex": "//.*",
       "style": "Comment"
     },
+    "cmt2": {
+      "regex": "\\{.+?\\}",
+      "style": "Comment"
+    },
     "keyw": {
-      "regex": "for|if|else",
+      "regex": "\\b(for|if|else)\\b",
       "style": "IdKeyword"
     },
     "id": {
@@ -17,6 +21,10 @@
     "num": {
       "regex": "\\d+(\\.\\d+)?",
       "style": "Number"
+    },
+    "str": {
+      "regex": "\\'.*?\\'",
+      "style": "String"
     },
     "sym": {
       "regex": "[\\-\\+\\*/\\(\\)\\[\\]\\{\\}\\|\\\\\\.,:;=`~!@\\#\\$%\\^&\\?<>]",
