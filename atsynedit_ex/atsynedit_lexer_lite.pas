@@ -188,6 +188,7 @@ begin
 
   repeat
     if NPos>Length(EdLine) then Break;
+    if NParts>=High(TATLineParts) then Break;
     bRuleFound:= false;
 
     ch:= EdLine[NPos];
@@ -205,7 +206,7 @@ begin
 
     if not bRuleFound then
     begin
-      if (NParts=0) or (bLastFound) then
+      if (NParts=0) or bLastFound then
       begin
         Inc(NParts);
         AParts[NParts-1].Offset:= NPos-1;
