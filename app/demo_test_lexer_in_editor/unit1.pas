@@ -139,6 +139,7 @@ procedure TForm1.EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
   ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
 var
   EdLine: UnicodeString;
+  ch: WideChar;
   NParts, NPos, NLen, IndexRule: integer;
   Rule: TATLiteLexerRule;
   bLastFound, bRuleFound: boolean;
@@ -152,17 +153,19 @@ begin
 
   repeat
     if NPos>Length(EdLine) then Break;
-
     bRuleFound:= false;
-    for IndexRule:= 0 to Lexer.Rules.Count-1 do
-    begin
-      Rule:= Lexer.GetRule(IndexRule);
-      if SRegexFind(RegexObj, Rule.Regex, EdLine, NPos, NLen) then
+
+    ch:= EdLine[NPos];
+    if (ch<>' ') and (ch<>#9) then
+      for IndexRule:= 0 to Lexer.Rules.Count-1 do
       begin
-        bRuleFound:= true;
-        Break;
+        Rule:= Lexer.GetRule(IndexRule);
+        if SRegexFind(RegexObj, Rule.Regex, EdLine, NPos, NLen) then
+        begin
+          bRuleFound:= true;
+          Break;
+        end;
       end;
-    end;
 
     if not bRuleFound then
     begin
