@@ -45,7 +45,7 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  Lexer:= TATLiteLexer.Create;
+  Lexer:= TATLiteLexer.Create(Self);
   Lexer.OnGetStyleHash:= @LexerGetStyleHash;
   Lexer.OnApplyStyle:=@LexerApplyStyle;
 
@@ -58,7 +58,7 @@ begin
   ed.OptRulerVisible:= false;
   ed.OptWrapMode:= cWrapOff;
   ed.Colors.TextBG:= $e0f0f0;
-  ed.OnCalcHilite:= @Lexer.EditorCalcHilite;
+  ed.AdapterForHilite:= Lexer;
 
   Styles:= TStringList.Create;
   Styles.Add('Id');

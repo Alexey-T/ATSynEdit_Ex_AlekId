@@ -8,6 +8,7 @@ uses
   Classes, SysUtils, Graphics, Dialogs,
   jsonConf,
   ATSynEdit,
+  ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
   ec_RegExpr;
 
@@ -25,7 +26,7 @@ type
 type
   { TATLiteLexer }
 
-  TATLiteLexer = class
+  TATLiteLexer = class(TATAdapterHilite)
   private
     RegexObj: TecRegExpr;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
@@ -35,14 +36,14 @@ type
     CaseSens: boolean;
     FileTypes: TStringList;
     Rules: TList;
-    constructor Create; virtual;
+    constructor Create(AOnwer: TComponent); override;
     destructor Destroy; override;
     procedure LoadFromFile(const AFilename: string);
     procedure Clear;
     function GetRule(AIndex: integer): TATLiteLexerRule;
     function GetDump: string;
-    procedure EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
-      ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
+    procedure OnEditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
+      ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor); override;
     property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
     property OnApplyStyle: TATLiteLexer_ApplyStyle read FOnApplyStyle write FOnApplyStyle;
   end;
@@ -68,7 +69,7 @@ end;
 
 { TATLiteLexer }
 
-constructor TATLiteLexer.Create;
+constructor TATLiteLexer.Create(AOnwer: TComponent);
 begin
   inherited;
   FileTypes:= TStringList.Create;
@@ -168,8 +169,9 @@ begin
 end;
 
 
-procedure TATLiteLexer.EditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
-  ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor);
+procedure TATLiteLexer.OnEditorCalcHilite(Sender: TObject;
+  var AParts: TATLineParts; ALineIndex, ACharIndex, ALineLen: integer;
+  var AColorAfterEol: TColor);
 var
   Ed: TATSynEdit;
   EdLine: UnicodeString;
