@@ -1,5 +1,5 @@
 {
-  "files": ["*.xml", "*.xsl", "*.xslt"],
+  "files": ["*.pas", "*.pp", "*.inc"],
   "case_sens": False,
   "rules": {
     "cmt": {
@@ -11,7 +11,7 @@
       "style": "Comment"
     },
     "keyw": {
-      "regex": "\\b(for|if|else)\\b",
+      "regex": "\\b(and|array|as|asm|begin|case|class|const|constructor|default|destructor|div|do|downto|else|end|except|exports|finalization|finally|for|function|goto|if|implementation|in|inherited|initialization|interface|is|mod|nil|not|object|of|or|out|private|procedure|program|property|protected|public|published|raise|record|repeat|self|set|string|then|to|try|type|unit|until|uses|var|while|with|xor)\\b",
       "style": "IdKeyword"
     },
     "id": {
