@@ -6,10 +6,10 @@ interface
 
 uses
   Classes, SysUtils, Graphics, Dialogs,
-  jsonConf,
   ATSynEdit,
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
+  at__jsonConf,
   ec_RegExpr;
 
 type

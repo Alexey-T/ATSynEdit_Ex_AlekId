@@ -10,10 +10,11 @@
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Description Value="Package additional to ATSynEdit (to avoid build errors), contains syntax highlight adapters"/>
+    <Description Value="Package additional to ATSynEdit (to avoid build errors), contains syntax highlight adapters.
+Contains copy of newer FPC FPJSON package, renamed files."/>
     <License Value="MPL 2.0 or LGPL"/>
-    <Version Major="1"/>
-    <Files Count="5">
+    <Version Major="1" Minor="1"/>
+    <Files Count="8">
       <Item1>
         <Filename Value="atsynedit_adapter_econtrol.pas"/>
         <UnitName Value="ATSynEdit_Adapter_EControl"/>
@@ -34,6 +35,18 @@
         <Filename Value="atsynedit_form_complete_synwrite.pas"/>
         <UnitName Value="ATSynEdit_Form_Complete_SynWrite"/>
       </Item5>
+      <Item6>
+        <Filename Value="atsynedit_adapter_litelexer.pas"/>
+        <UnitName Value="atsynedit_adapter_litelexer"/>
+      </Item6>
+      <Item7>
+        <Filename Value="at__jsonconf.pp"/>
+        <UnitName Value="jsonConf"/>
+      </Item7>
+      <Item8>
+        <Filename Value="at__jsonparser.pp"/>
+        <UnitName Value="jsonparser"/>
+      </Item8>
     </Files>
     <RequiredPkgs Count="4">
       <Item1>
