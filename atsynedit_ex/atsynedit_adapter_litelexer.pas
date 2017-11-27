@@ -13,16 +13,16 @@ uses
   ec_RegExpr;
 
 type
-
   { TATLiteLexerRule }
 
   TATLiteLexerRule = class
   private
     RegexObj: TecRegExpr;
   public
-    Name, Regex, Style: string;
+    Name: string;
+    Style: string;
     StyleHash: integer;
-    constructor Create(const AName, AStyle, ARegex: string; ACaseSens: boolean);
+    constructor Create(const AName, AStyle, ARegex: string; ACaseSens: boolean); virtual;
     destructor Destroy; override;
   end;
 
@@ -63,7 +63,6 @@ begin
   inherited Create;
   Name:= AName;
   Style:= AStyle;
-  Regex:= ARegex;
   RegexObj:= TecRegExpr.Create;
   RegexObj.Expression:= ARegex;
   RegexObj.ModifierI:= not ACaseSens;
@@ -171,7 +170,8 @@ begin
     'rules:';
   for i:= 0 to Rules.Count-1 do
     with GetRule(i) do
-      Result:= Result+#10+Format('(name: "%s", re: "%s", st: "%s", st_n: %d)', [Name, Regex, Style, StyleHash]);
+      Result:= Result+#10+Format('(name: "%s", re: "%s", st: "%s", st_n: %d)',
+        [Name, RegexObj.Expression, Style, StyleHash]);
 end;
 
 
