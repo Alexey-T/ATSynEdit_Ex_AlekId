@@ -31,6 +31,8 @@ type
     RegexObj: TecRegExpr;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
+    function RegexFindLen(const ARegex, AInputStr: UnicodeString;
+      AFromPos: integer): integer;
   public
     LexerName: string;
     CaseSens: boolean;
@@ -50,23 +52,6 @@ type
 
 implementation
 
-function SRegexFindLen(Obj: TecRegExpr;
-  const ARegex, AInputStr: UnicodeString;
-  AFromPos: integer): integer;
-var
-  i: integer;
-begin
-  Result:= 0;
-  if ARegex='' then exit;
-
-  Obj.ModifierS:= false; //don't catch all text by .*
-  Obj.ModifierM:= true; //allow to work with ^$
-
-  Obj.Expression:= ARegex;
-  Result:= Obj.MatchLength(AInputStr, AFromPos);
-end;
-
-
 { TATLiteLexer }
 
 constructor TATLiteLexer.Create(AOnwer: TComponent);
@@ -75,6 +60,8 @@ begin
   FileTypes:= TStringList.Create;
   Rules:= TList.Create;
   RegexObj:= TecRegExpr.Create;
+  RegexObj.ModifierS:= false; //don't catch all text by .*
+  RegexObj.ModifierM:= true; //allow to work with ^$
 end;
 
 destructor TATLiteLexer.Destroy;
@@ -84,6 +71,14 @@ begin
   FreeAndNil(FileTypes);
   FreeAndNil(Rules);
   inherited;
+end;
+
+function TATLiteLexer.RegexFindLen(const ARegex, AInputStr: UnicodeString;
+  AFromPos: integer): integer;
+begin
+  if ARegex='' then exit(0);
+  RegexObj.Expression:= ARegex;
+  Result:= RegexObj.MatchLength(AInputStr, AFromPos);
 end;
 
 procedure TATLiteLexer.Clear;
@@ -198,7 +193,7 @@ begin
       for IndexRule:= 0 to Rules.Count-1 do
       begin
         Rule:= GetRule(IndexRule);
-        NLen:= SRegexFindLen(RegexObj, Rule.Regex, EdLine, NPos);
+        NLen:= RegexFindLen(Rule.Regex, EdLine, NPos);
         if NLen>0 then
         begin
           bRuleFound:= true;
