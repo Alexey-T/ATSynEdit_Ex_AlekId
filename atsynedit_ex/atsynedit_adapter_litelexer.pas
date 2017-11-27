@@ -13,10 +13,17 @@ uses
   ec_RegExpr;
 
 type
+
+  { TATLiteLexerRule }
+
   TATLiteLexerRule = class
+  private
+    RegexObj: TecRegExpr;
   public
     Name, Regex, Style: string;
     StyleHash: integer;
+    constructor Create(const AName, AStyle, ARegex: string; ACaseSens: boolean);
+    destructor Destroy; override;
   end;
 
 type
@@ -28,11 +35,8 @@ type
 
   TATLiteLexer = class(TATAdapterHilite)
   private
-    RegexObj: TecRegExpr;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
-    function RegexFindLen(const ARegex, AInputStr: UnicodeString;
-      AFromPos: integer): integer;
   public
     LexerName: string;
     CaseSens: boolean;
@@ -52,6 +56,27 @@ type
 
 implementation
 
+{ TATLiteLexerRule }
+
+constructor TATLiteLexerRule.Create(const AName, AStyle, ARegex: string; ACaseSens: boolean);
+begin
+  inherited Create;
+  Name:= AName;
+  Style:= AStyle;
+  Regex:= ARegex;
+  RegexObj:= TecRegExpr.Create;
+  RegexObj.Expression:= ARegex;
+  RegexObj.ModifierI:= not ACaseSens;
+  RegexObj.ModifierS:= false; //don't catch all text by .*
+  RegexObj.ModifierM:= true; //allow to work with ^$
+end;
+
+destructor TATLiteLexerRule.Destroy;
+begin
+  FreeAndNil(RegexObj);
+  inherited Destroy;
+end;
+
 { TATLiteLexer }
 
 constructor TATLiteLexer.Create(AOnwer: TComponent);
@@ -59,26 +84,14 @@ begin
   inherited;
   FileTypes:= TStringList.Create;
   Rules:= TList.Create;
-  RegexObj:= TecRegExpr.Create;
-  RegexObj.ModifierS:= false; //don't catch all text by .*
-  RegexObj.ModifierM:= true; //allow to work with ^$
 end;
 
 destructor TATLiteLexer.Destroy;
 begin
   Clear;
-  FreeAndNil(RegexObj);
   FreeAndNil(FileTypes);
   FreeAndNil(Rules);
   inherited;
-end;
-
-function TATLiteLexer.RegexFindLen(const ARegex, AInputStr: UnicodeString;
-  AFromPos: integer): integer;
-begin
-  if ARegex='' then exit(0);
-  RegexObj.Expression:= ARegex;
-  Result:= RegexObj.MatchLength(AInputStr, AFromPos);
 end;
 
 procedure TATLiteLexer.Clear;
@@ -132,12 +145,10 @@ begin
       s_style:= c.GetValue('/rules/'+s_name+'/style', '');
       if (s_name='') or (s_regex='') or (s_style='') then Continue;
 
-      rule:= TATLiteLexerRule.Create;
-      rule.Name:= s_name;
-      rule.Regex:= s_regex;
-      rule.Style:= s_style;
+      rule:= TATLiteLexerRule.Create(s_name, s_style, s_regex, CaseSens);
       if Assigned(FOnGetStyleHash) then
         FOnGetStyleHash(Self, rule.Style, rule.StyleHash);
+
       Rules.Add(rule);
     end;
   finally
@@ -181,8 +192,6 @@ begin
   NPos:= 1;
   bLastFound:= false;
 
-  RegexObj.ModifierI:= not CaseSens;
-
   repeat
     if NPos>Length(EdLine) then Break;
     if NParts>=High(TATLineParts) then Break;
@@ -193,7 +202,7 @@ begin
       for IndexRule:= 0 to Rules.Count-1 do
       begin
         Rule:= GetRule(IndexRule);
-        NLen:= RegexFindLen(Rule.Regex, EdLine, NPos);
+        NLen:= Rule.RegexObj.MatchLength(EdLine, NPos);
         if NLen>0 then
         begin
           bRuleFound:= true;
