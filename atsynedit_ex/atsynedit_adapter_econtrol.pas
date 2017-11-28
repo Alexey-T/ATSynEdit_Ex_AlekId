@@ -740,11 +740,9 @@ begin
     for i:= 0 to AnClient.RangeCount-1 do
     begin
       if FStopTreeUpdate then exit;
+      if Application.Terminated then exit;
       if (i mod cProgressRangeCount)=0 then
-      begin
         Application.ProcessMessages;
-        if Application.Terminated then exit;
-      end;
 
       R:= AnClient.Ranges[i];
       if R.Rule=nil then Continue;

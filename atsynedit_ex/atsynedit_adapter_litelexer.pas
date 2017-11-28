@@ -1,11 +1,15 @@
-unit atsynedit_adapter_litelexer;
+{
+Copyright (C) Alexey Torgashin, uvviewsoft.com
+License: MPL 2.0 or LGPL
+}
+unit ATSynEdit_Adapter_LiteLexer;
 
 {$mode objfpc}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils, Graphics, Dialogs,
+  Classes, SysUtils, Graphics, Forms, Dialogs,
   ATSynEdit,
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
@@ -282,6 +286,7 @@ var
   Rule: TATLiteLexerRule;
   bLastFound, bRuleFound: boolean;
 begin
+  if Application.Terminated then exit;
   Ed:= Sender as TATSynEdit;
   EdLine:= Copy(Ed.Strings.Lines[ALineIndex], ACharIndex, ALineLen);
   NParts:= 0;
