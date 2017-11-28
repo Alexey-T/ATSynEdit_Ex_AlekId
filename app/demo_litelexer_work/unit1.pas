@@ -74,13 +74,6 @@ begin
   LexerLib.OnGetStyleHash:= @LexerGetStyleHash;
   LexerLib.OnApplyStyle:= @LexerApplyStyle;
   LexerLib.LoadFromDir(ExtractFilePath(ExtractFileDir(Application.ExeName))+'litelexers');
-
-  {
-  S:= '';
-  for i:= 0 to LexerLib.Count-1 do
-    S:= S+LexerLib.GetLexer(i).LexerName+' ';
-  ShowMessage('Lexers found:'#10+S);
-  }
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -95,9 +88,10 @@ procedure TForm1.DoOpen(const fn: string);
 var
   Lexer: TATLiteLexer;
 begin
+  Caption:= ExtractFileName(fn);
   Lexer:= LexerLib.FindLexer(fn);
   if Assigned(Lexer) then
-    Caption:= ExtractFileName(fn)+' - '+Lexer.LexerName;
+    Caption:= Caption+' ('+Lexer.LexerName+')';
   ed.AdapterForHilite:= Lexer;
   ed.LoadFromFile(fn);
   ActiveControl:= ed;
