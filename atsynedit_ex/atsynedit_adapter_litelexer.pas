@@ -75,7 +75,8 @@ type
     procedure LoadFromDir(const ADir: string);
     function Count: integer;
     function GetLexer(AIndex: integer): TATLiteLexer;
-    function FindLexer(AFilename: string): TATLiteLexer;
+    function FindLexerByFilename(AFilename: string): TATLiteLexer;
+    function FindLexerByName(const AName: string): TATLiteLexer;
     property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
     property OnApplyStyle: TATLiteLexer_ApplyStyle read FOnApplyStyle write FOnApplyStyle;
   end;
@@ -111,7 +112,7 @@ begin
   Result:= TATLiteLexer(FList[AIndex]);
 end;
 
-function TATLiteLexers.FindLexer(AFilename: string): TATLiteLexer;
+function TATLiteLexers.FindLexerByFilename(AFilename: string): TATLiteLexer;
 var
   Lexer: TATLiteLexer;
   i: integer;
@@ -122,6 +123,20 @@ begin
   begin
     Lexer:= GetLexer(i);
     if Lexer.IsFilenameMatch(AFileName) then
+      exit(Lexer);
+  end;
+end;
+
+function TATLiteLexers.FindLexerByName(const AName: string): TATLiteLexer;
+var
+  Lexer: TATLiteLexer;
+  i: integer;
+begin
+  Result:= nil;
+  for i:= 0 to FList.Count-1 do
+  begin
+    Lexer:= GetLexer(i);
+    if Lexer.LexerName=AName then
       exit(Lexer);
   end;
 end;
