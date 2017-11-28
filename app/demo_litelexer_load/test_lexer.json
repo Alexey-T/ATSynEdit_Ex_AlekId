@@ -1,5 +1,5 @@
 {
-  "files": ["*.pas", "*.pp", "*.inc"],
+  "files": "*.pas;*.pp;*.inc",
   "case_sens": False,
   "rules": {
     "cmt": {

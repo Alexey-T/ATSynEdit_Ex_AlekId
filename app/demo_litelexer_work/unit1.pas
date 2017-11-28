@@ -80,6 +80,11 @@ end;
 
 procedure TForm1.DoOpen(const fn: string);
 begin
+  if Lexer.IsFilenameMatch(fn) then
+    ShowMessage('filename matches')
+  else
+    ShowMessage('no filename match');
+
   ed.LoadFromFile(fn);
   ActiveControl:= ed;
   Caption:= 'Demo - '+ExtractFileName(fn);

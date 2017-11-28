@@ -9,6 +9,7 @@ uses
   ATSynEdit,
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
+  Masks,
   at__jsonConf,
   ec_RegExpr;
 
@@ -38,13 +39,14 @@ type
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
   public
     LexerName: string;
+    FileTypes: string;
     CaseSens: boolean;
-    FileTypes: TStringList;
     Rules: TList;
     constructor Create(AOnwer: TComponent); override;
     destructor Destroy; override;
     procedure LoadFromFile(const AFilename: string);
     procedure Clear;
+    function IsFilenameMatch(const AFilename: string): boolean;
     function GetRule(AIndex: integer): TATLiteLexerRule;
     function GetDump: string;
     procedure OnEditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
@@ -80,14 +82,12 @@ end;
 constructor TATLiteLexer.Create(AOnwer: TComponent);
 begin
   inherited;
-  FileTypes:= TStringList.Create;
   Rules:= TList.Create;
 end;
 
 destructor TATLiteLexer.Destroy;
 begin
   Clear;
-  FreeAndNil(FileTypes);
   FreeAndNil(Rules);
   inherited;
 end;
@@ -98,11 +98,15 @@ var
 begin
   LexerName:= '?';
   CaseSens:= false;
-  FileTypes.Clear;
 
   for i:= Rules.Count-1 downto 0 do
     TObject(Rules[i]).Free;
   Rules.Clear;
+end;
+
+function TATLiteLexer.IsFilenameMatch(const AFilename: string): boolean;
+begin
+  Result:= MatchesMaskList(AFilename, FileTypes, ';');
 end;
 
 function TATLiteLexer.GetRule(AIndex: integer): TATLiteLexerRule;
@@ -133,7 +137,7 @@ begin
 
     LexerName:= ChangeFileExt(ExtractFileName(AFilename), '');
     CaseSens:= c.GetValue('/case_sens', false);
-    c.GetValue('/files', FileTypes, '');
+    FileTypes:= c.GetValue('/files', '');
 
     c.EnumSubKeys('/rules', keys);
     for i:= 0 to keys.Count-1 do
@@ -161,11 +165,10 @@ const
 var
   i: integer;
 begin
-  FileTypes.LineBreak:= ' ';
   Result:=
     'name: '+LexerName+#10+
     'case_sens: '+cBool[CaseSens]+#10+
-    'files: '+FileTypes.Text+#10+
+    'files: '+FileTypes+#10+
     'rules:';
   for i:= 0 to Rules.Count-1 do
     with GetRule(i) do
