@@ -19,7 +19,7 @@
       "style": "Id"
     },
     "num": {
-      "regex": "\\d+(\\.\\d+)?",
+      "regex": "\\d+(\\.\\d+)?([eE][-\\+]?\\d+)?",
       "style": "Number"
     },
     "str": {
