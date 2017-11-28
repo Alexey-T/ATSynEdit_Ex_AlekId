@@ -1,17 +1,17 @@
 {
-  "files": "*.pas;*.pp;*.inc",
+  "files": "*.xml;*.xsl",
   "case_sens": False,
   "rules": {
     "cmt": {
-      "regex": "//.*",
+      "regex": "<!--.*?-->",
       "style": "Comment"
     },
-    "cmt2": {
-      "regex": "\\{.+?\\}",
+    "cmt": {
+      "regex": "<\\?.*?\\?>",
       "style": "Comment"
     },
     "keyw": {
-      "regex": "\\b(and|array|as|asm|begin|case|class|const|constructor|default|destructor|div|do|downto|else|end|except|exports|finalization|finally|for|function|goto|if|implementation|in|inherited|initialization|interface|is|mod|nil|not|object|of|or|out|private|procedure|program|property|protected|public|published|raise|record|repeat|self|set|string|then|to|try|type|unit|until|uses|var|while|with|xor)\\b",
+      "regex": "\\b(xsl)\\b",
       "style": "IdKeyword"
     },
     "id": {
@@ -24,6 +24,10 @@
     },
     "str": {
       "regex": "\\'.*?\\'",
+      "style": "String"
+    },
+    "str2": {
+      "regex": "\\\".*?\\\"",
       "style": "String"
     },
     "sym": {

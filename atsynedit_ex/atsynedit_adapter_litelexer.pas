@@ -10,6 +10,7 @@ uses
   ATSynEdit_Adapters,
   ATSynEdit_CanvasProc,
   Masks,
+  FileUtil,
   at__jsonConf,
   ec_RegExpr;
 
@@ -55,7 +56,100 @@ type
     property OnApplyStyle: TATLiteLexer_ApplyStyle read FOnApplyStyle write FOnApplyStyle;
   end;
 
+type
+  { TATLiteLexers }
+
+  TATLiteLexers = class
+  private
+    FList: TList;
+    FOnGetStyleHash: TATLiteLexer_GetStyleHash;
+    FOnApplyStyle: TATLiteLexer_ApplyStyle;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure LoadFromDir(const ADir: string);
+    function Count: integer;
+    function GetLexer(AIndex: integer): TATLiteLexer;
+    function FindLexer(AFilename: string): TATLiteLexer;
+    property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
+    property OnApplyStyle: TATLiteLexer_ApplyStyle read FOnApplyStyle write FOnApplyStyle;
+  end;
+
 implementation
+
+{ TATLiteLexers }
+
+constructor TATLiteLexers.Create;
+begin
+  inherited;
+  FList:= TList.Create;
+end;
+
+destructor TATLiteLexers.Destroy;
+begin
+  Clear;
+  FreeAndNil(FList);
+  inherited;
+end;
+
+procedure TATLiteLexers.Clear;
+var
+  i: integer;
+begin
+  for i:= FList.Count-1 downto 0 do
+    TObject(FList[i]).Free;
+  FList.Clear;
+end;
+
+function TATLiteLexers.GetLexer(AIndex: integer): TATLiteLexer;
+begin
+  Result:= TATLiteLexer(FList[AIndex]);
+end;
+
+function TATLiteLexers.FindLexer(AFilename: string): TATLiteLexer;
+var
+  Lexer: TATLiteLexer;
+  i: integer;
+begin
+  Result:= nil;
+  AFilename:= ExtractFileName(AFilename);
+  for i:= 0 to FList.Count-1 do
+  begin
+    Lexer:= GetLexer(i);
+    if Lexer.IsFilenameMatch(AFileName) then
+      exit(Lexer);
+  end;
+end;
+
+procedure TATLiteLexers.LoadFromDir(const ADir: string);
+var
+  Files: TStringList;
+  Lexer: TATLiteLexer;
+  i: integer;
+begin
+  Files:= TStringList.Create;
+  try
+    FindAllFiles(Files, ADir, '*.json;*.cuda-litelexer', false);
+    Files.Sorted:= true;
+
+    for i:= 0 to Files.Count-1 do
+    begin
+      Lexer:= TATLiteLexer.Create(nil);
+      Lexer.OnGetStyleHash:= FOnGetStyleHash;
+      Lexer.OnApplyStyle:= FOnApplyStyle;
+      Lexer.LoadFromFile(Files[i]);
+      FList.Add(Lexer);
+    end;
+  finally
+    FreeAndNil(Files);
+  end;
+end;
+
+function TATLiteLexers.Count: integer;
+begin
+  Result:= FList.Count;
+end;
 
 { TATLiteLexerRule }
 

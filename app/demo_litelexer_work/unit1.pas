@@ -24,8 +24,8 @@ type
     procedure FormShow(Sender: TObject);
   private
     { private declarations }
+    LexerLib: TATLiteLexers;
     ed: TATSynEdit;
-    Lexer: TATLiteLexer;
     Styles: TStringList;
     function LexerGetStyleHash(Sender: TObject; const AStyleName: string): integer;
     procedure LexerApplyStyle(Sender: TObject; AStyleHash: integer; var APart: TATLinePart);
@@ -44,11 +44,10 @@ implementation
 { TForm1 }
 
 procedure TForm1.FormCreate(Sender: TObject);
+var
+  S: string;
+  i: integer;
 begin
-  Lexer:= TATLiteLexer.Create(Self);
-  Lexer.OnGetStyleHash:= @LexerGetStyleHash;
-  Lexer.OnApplyStyle:= @LexerApplyStyle;
-
   ed:= TATSynEdit.Create(Self);
   ed.Parent:= Self;
   ed.Font.Name:= 'Courier New';
@@ -58,7 +57,6 @@ begin
   ed.OptRulerVisible:= false;
   ed.OptWrapMode:= cWrapOff;
   ed.Colors.TextBG:= $e0f0f0;
-  ed.AdapterForHilite:= Lexer;
 
   Styles:= TStringList.Create;
   Styles.Add('Id');
@@ -67,7 +65,18 @@ begin
   Styles.Add('String');
   Styles.Add('Symbol');
   Styles.Add('Comment');
-  Lexer.LoadFromFile(ExtractFilePath(Application.ExeName)+'test_lexer.json');
+
+  LexerLib:= TATLiteLexers.Create;
+  LexerLib.OnGetStyleHash:= @LexerGetStyleHash;
+  LexerLib.OnApplyStyle:= @LexerApplyStyle;
+  LexerLib.LoadFromDir(ExtractFilePath(ExtractFileDir(Application.ExeName))+'litelexers');
+
+  {
+  S:= '';
+  for i:= 0 to LexerLib.Count-1 do
+    S:= S+LexerLib.GetLexer(i).LexerName+' ';
+  ShowMessage('Lexers found:'#10+S);
+  }
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -79,15 +88,15 @@ begin
 end;
 
 procedure TForm1.DoOpen(const fn: string);
+var
+  Lexer: TATLiteLexer;
 begin
-  if Lexer.IsFilenameMatch(fn) then
-    ShowMessage('filename matches')
-  else
-    ShowMessage('no filename match');
-
+  Lexer:= LexerLib.FindLexer(fn);
+  if Assigned(Lexer) then
+    Caption:= ExtractFileName(fn)+' - '+Lexer.LexerName;
+  ed.AdapterForHilite:= Lexer;
   ed.LoadFromFile(fn);
   ActiveControl:= ed;
-  Caption:= 'Demo - '+ExtractFileName(fn);
 end;
 
 procedure TForm1.ButtonOpenClick(Sender: TObject);
