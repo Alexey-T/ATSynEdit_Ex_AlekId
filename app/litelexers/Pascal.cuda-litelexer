@@ -1,6 +1,6 @@
 {
   "files": "*.pas;*.pp;*.inc",
-  "case_sens": False,
+  "case_sens": false,
   "rules": {
     "cmt": {
       "regex": "//.*",

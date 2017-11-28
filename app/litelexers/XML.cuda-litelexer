@@ -1,0 +1,38 @@
+{
+  "files": "*.xml;*.xsl",
+  "case_sens": true,
+  "rules": {
+    "cmt": {
+      "regex": "<!--.*?-->",
+      "style": "Comment"
+    },
+    "cmt": {
+      "regex": "<\\?.*?\\?>",
+      "style": "Comment"
+    },
+    "keyw": {
+      "regex": "\\b(xsl)\\b",
+      "style": "IdKeyword"
+    },
+    "id": {
+      "regex": "[a-zA-Z_]\\w*",
+      "style": "Id"
+    },
+    "num": {
+      "regex": "\\d+(\\.\\d+)?",
+      "style": "Number"
+    },
+    "str": {
+      "regex": "\\'.*?\\'",
+      "style": "String"
+    },
+    "str2": {
+      "regex": "\\\".*?\\\"",
+      "style": "String"
+    },
+    "sym": {
+      "regex": "[\\-\\+\\*/\\(\\)\\[\\]\\{\\}\\|\\\\\\.,:;=`~!@\\#\\$%\\^&\\?<>]",
+      "style": "Symbol"
+    }
+  }
+}

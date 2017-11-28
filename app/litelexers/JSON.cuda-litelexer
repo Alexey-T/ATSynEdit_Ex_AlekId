@@ -1,21 +1,17 @@
 {
-  "files": "*.xml;*.xsl",
-  "case_sens": False,
+  "files": "*.json",
+  "case_sens": true,
   "rules": {
     "cmt": {
-      "regex": "<!--.*?-->",
-      "style": "Comment"
-    },
-    "cmt": {
-      "regex": "<\\?.*?\\?>",
+      "regex": "//.*",
       "style": "Comment"
     },
     "keyw": {
-      "regex": "\\b(xsl)\\b",
+      "regex": "\\b(true|false|None)\\b",
       "style": "IdKeyword"
     },
     "id": {
-      "regex": "[a-z_]\\w*",
+      "regex": "[a-zA-Z_]\\w*",
       "style": "Id"
     },
     "num": {
@@ -23,11 +19,7 @@
       "style": "Number"
     },
     "str": {
-      "regex": "\\'.*?\\'",
-      "style": "String"
-    },
-    "str2": {
-      "regex": "\\\".*?\\\"",
+      "regex": "\"(\\\\\\\\|\\\\\"|.)*?\"",
       "style": "String"
     },
     "sym": {
