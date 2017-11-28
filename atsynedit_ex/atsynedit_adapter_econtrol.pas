@@ -83,7 +83,6 @@ type
     procedure GetTokenProps(token: TecSyntToken; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
     function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: TPoint; ACond: TATRangeCond): boolean;
-    procedure SetPartStyleFromEcStyle(var part: TATLinePart; st: TecSyntaxFormat);
     function GetTokenColorBG_FromColoredRanges(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
     function GetTokenColorBG_FromMultiLineTokens(APos: TPoint;
@@ -149,6 +148,8 @@ type
     property OnParseDone: TNotifyEvent read FOnParseDone write FOnParseDone;
   end;
 
+procedure ApplyPartStyleFromEcontrolStyle(var part: TATLinePart; st: TecSyntaxFormat);
+
 
 implementation
 
@@ -174,6 +175,33 @@ begin
   if (P1.Y>P2.Y) then exit(1);
   if (P1.Y<P2.Y) then exit(-1);
   if (P1.X>P2.X) then exit(1) else exit(-1);
+end;
+
+procedure ApplyPartStyleFromEcontrolStyle(var part: TATLinePart; st: TecSyntaxFormat);
+begin
+  if Assigned(st.Font) then
+  if st.FormatType in [ftCustomFont, ftFontAttr, ftColor] then
+  begin
+    if st.Font.Color<>clNone then
+      part.ColorFont:= st.Font.Color;
+  end;
+  if st.FormatType in [ftCustomFont, ftFontAttr, ftColor, ftBackGround] then
+  begin
+    if st.BgColor<>clNone then
+      part.ColorBG:= st.BgColor;
+  end;
+  if Assigned(st.Font) then
+  if st.FormatType in [ftCustomFont, ftFontAttr] then
+  begin
+    part.FontBold:= fsBold in st.Font.Style;
+    part.FontItalic:= fsItalic in st.Font.Style;
+    part.FontStrikeOut:= fsStrikeOut in st.Font.Style;
+  end;
+  part.ColorBorder:= st.BorderColorBottom;
+  part.BorderUp:= cBorderEc[st.BorderTypeTop];
+  part.BorderDown:= cBorderEc[st.BorderTypeBottom];
+  part.BorderLeft:= cBorderEc[st.BorderTypeLeft];
+  part.BorderRight:= cBorderEc[st.BorderTypeRight];
 end;
 
 
@@ -464,7 +492,7 @@ begin
     tokenStyle:= token.Style;
     DoFindTokenOverrideStyle(tokenStyle, i, AEditorIndex);
     if tokenStyle<>nil then
-      SetPartStyleFromEcStyle(part, tokenStyle);
+      ApplyPartStyleFromEcontrolStyle(part, tokenStyle);
 
     //add missing part
     if partindex=0 then
@@ -1264,33 +1292,6 @@ begin
   end;
 end;
 
-
-procedure TATAdapterEControl.SetPartStyleFromEcStyle(var part: TATLinePart; st: TecSyntaxFormat);
-begin
-  if Assigned(st.Font) then
-  if st.FormatType in [ftCustomFont, ftFontAttr, ftColor] then
-  begin
-    if st.Font.Color<>clNone then
-      part.ColorFont:= st.Font.Color;
-  end;
-  if st.FormatType in [ftCustomFont, ftFontAttr, ftColor, ftBackGround] then
-  begin
-    if st.BgColor<>clNone then
-      part.ColorBG:= st.BgColor;
-  end;
-  if Assigned(st.Font) then
-  if st.FormatType in [ftCustomFont, ftFontAttr] then
-  begin
-    part.FontBold:= fsBold in st.Font.Style;
-    part.FontItalic:= fsItalic in st.Font.Style;
-    part.FontStrikeOut:= fsStrikeOut in st.Font.Style;
-  end;
-  part.ColorBorder:= st.BorderColorBottom;
-  part.BorderUp:= cBorderEc[st.BorderTypeTop];
-  part.BorderDown:= cBorderEc[st.BorderTypeBottom];
-  part.BorderLeft:= cBorderEc[st.BorderTypeLeft];
-  part.BorderRight:= cBorderEc[st.BorderTypeRight];
-end;
 
 procedure TATAdapterEControl.DoFindTokenOverrideStyle(var ATokenStyle: TecSyntaxFormat;
   ATokenIndex, AEditorIndex: integer);
