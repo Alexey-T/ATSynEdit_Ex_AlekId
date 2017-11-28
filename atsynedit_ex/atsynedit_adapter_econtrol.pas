@@ -1103,6 +1103,8 @@ begin
 
   for i:= 0 to AnClient.RangeCount-1 do
   begin
+    if Application.Terminated then exit;
+
     R:= AnClient.Ranges[i];
     if R.Rule.BlockType<>btRangeStart then Continue;
 
@@ -1171,6 +1173,8 @@ var
 begin
   for i:= 0 to AnClient.SubLexerRangeCount-1 do
   begin
+    if Application.Terminated then exit;
+
     R:= AnClient.SubLexerRanges[i];
     if R.Rule=nil then Continue;
     if R.StartPos<0 then Continue;
@@ -1264,6 +1268,13 @@ end;
 
 procedure TATAdapterEControl.TimerDuringAnalyzeTimer(Sender: TObject);
 begin
+  if Application.Terminated then
+  begin
+    TimerDuringAnalyze.Enabled:= false;
+    FBusyTimer:= false;
+    exit
+  end;
+
   if not Assigned(AnClient) then Exit;
   Inc(FParseTicks);
 
