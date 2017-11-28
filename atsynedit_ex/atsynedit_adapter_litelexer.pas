@@ -16,19 +16,18 @@ type
   { TATLiteLexerRule }
 
   TATLiteLexerRule = class
-  private
-    RegexObj: TecRegExpr;
   public
     Name: string;
     Style: string;
     StyleHash: integer;
+    RegexObj: TecRegExpr;
     constructor Create(const AName, AStyle, ARegex: string; ACaseSens: boolean); virtual;
     destructor Destroy; override;
   end;
 
 type
-  TATLiteLexer_GetStyleHash = procedure (Sender: TObject; const AStyleName: string; var AStyleHash: integer) of object;
-  TATLiteLexer_ApplyStyle = procedure (Sender: TObject; const AStyleHash: integer; var APart: TATLinePart) of object;
+  TATLiteLexer_GetStyleHash = function (Sender: TObject; const AStyleName: string): integer of object;
+  TATLiteLexer_ApplyStyle = procedure (Sender: TObject; AStyleHash: integer; var APart: TATLinePart) of object;
 
 type
   { TATLiteLexer }
@@ -146,7 +145,7 @@ begin
 
       rule:= TATLiteLexerRule.Create(s_name, s_style, s_regex, CaseSens);
       if Assigned(FOnGetStyleHash) then
-        FOnGetStyleHash(Self, rule.Style, rule.StyleHash);
+        rule.StyleHash:= FOnGetStyleHash(Self, rule.Style);
 
       Rules.Add(rule);
     end;

@@ -27,8 +27,8 @@ type
     ed: TATSynEdit;
     Lexer: TATLiteLexer;
     Styles: TStringList;
-    procedure LexerGetStyleHash(Sender: TObject; const AStyle: string; var AHash: integer);
-    procedure LexerApplyStyle(Sender: TObject; const AHash: integer; var APart: TATLinePart);
+    function LexerGetStyleHash(Sender: TObject; const AStyleName: string): integer;
+    procedure LexerApplyStyle(Sender: TObject; AStyleHash: integer; var APart: TATLinePart);
     procedure DoOpen(const fn: string);
   public
     { public declarations }
@@ -47,12 +47,12 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   Lexer:= TATLiteLexer.Create(Self);
   Lexer.OnGetStyleHash:= @LexerGetStyleHash;
-  Lexer.OnApplyStyle:=@LexerApplyStyle;
+  Lexer.OnApplyStyle:= @LexerApplyStyle;
 
   ed:= TATSynEdit.Create(Self);
   ed.Parent:= Self;
   ed.Font.Name:= 'Courier New';
-  ed.Font.Size:= 11;
+  ed.Font.Size:= 10;
   ed.Align:= alClient;
   ed.OptUnprintedVisible:= false;
   ed.OptRulerVisible:= false;
@@ -92,14 +92,12 @@ begin
       DoOpen(FileName);
 end;
 
-procedure TForm1.LexerGetStyleHash(Sender: TObject; const AStyle: string;
-  var AHash: integer);
+function TForm1.LexerGetStyleHash(Sender: TObject; const AStyleName: string): integer;
 begin
-  AHash:= Styles.IndexOf(AStyle);
+  Result:= Styles.IndexOf(AStyleName);
 end;
 
-procedure TForm1.LexerApplyStyle(Sender: TObject; const AHash: integer;
-  var APart: TATLinePart);
+procedure TForm1.LexerApplyStyle(Sender: TObject; AStyleHash: integer; var APart: TATLinePart);
 begin
   {
   Styles.Add('Id');
@@ -109,7 +107,7 @@ begin
   Styles.Add('Symbol');
   Styles.Add('Comment');
   }
-  case AHash of
+  case AStyleHash of
     0: begin APart.ColorFont:= clBlack; APart.FontBold:= false; end;
     1: begin APart.ColorFont:= clBlack; APart.FontBold:= true; end;
     2: begin APart.ColorFont:= clNavy; APart.FontBold:= true;  end;
