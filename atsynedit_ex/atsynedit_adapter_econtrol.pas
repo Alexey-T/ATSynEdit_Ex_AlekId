@@ -627,8 +627,13 @@ end;
 procedure TATAdapterEControl.Stop;
 begin
   TimerDuringAnalyze.Enabled:= false;
-  while FBusyTreeUpdate do begin Sleep(50); end;
-  while FBusyTimer do begin Sleep(50); end;
+
+  if not Application.Terminated then
+  begin
+    //seems, Sleep() may hang on gtk2 on app closing
+    while FBusyTreeUpdate do begin Sleep(50); end;
+    while FBusyTimer do begin Sleep(50); end;
+  end;
 
   if Assigned(AnClient) then
     AnClient.Stop;
