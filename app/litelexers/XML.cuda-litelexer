@@ -8,11 +8,11 @@
     },
     "cmt": {
       "regex": "<\\?.*?\\?>",
-      "style": "Comment"
+      "style": "CommentDoc"
     },
-    "keyw": {
-      "regex": "\\b(xsl)\\b",
-      "style": "IdKeyword"
+    "tag_bound": {
+      "regex": "<[/!\\-]*[\\w\\-:]*|/?>",
+      "style": "TagBound"
     },
     "id": {
       "regex": "[a-zA-Z_]\\w*",

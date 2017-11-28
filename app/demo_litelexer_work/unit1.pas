@@ -65,6 +65,10 @@ begin
   Styles.Add('String');
   Styles.Add('Symbol');
   Styles.Add('Comment');
+  Styles.Add('CommentDoc');
+  Styles.Add('TagId');
+  Styles.Add('TagProp');
+  Styles.Add('TagBound');
 
   LexerLib:= TATLiteLexers.Create;
   LexerLib.OnGetStyleHash:= @LexerGetStyleHash;
@@ -120,14 +124,22 @@ begin
   Styles.Add('String');
   Styles.Add('Symbol');
   Styles.Add('Comment');
+  Styles.Add('CommentDoc');
+  Styles.Add('TagId')
+  Styles.Add('TagProp')
+  Styles.Add('TagBound')
   }
   case AStyleHash of
-    0: begin APart.ColorFont:= clBlack; APart.FontBold:= false; end;
+    0: begin APart.ColorFont:= clBlack; end;
     1: begin APart.ColorFont:= clBlack; APart.FontBold:= true; end;
-    2: begin APart.ColorFont:= clNavy; APart.FontBold:= true;  end;
-    3: begin APart.ColorFont:= clTeal; APart.FontBold:= false;  end;
-    4: begin APart.ColorFont:= clRed; APart.FontBold:= false;  end;
-    5: begin APart.ColorFont:= clGray; APart.FontBold:= false; APart.FontItalic:= true;  end;
+    2: begin APart.ColorFont:= clNavy; APart.FontBold:= true; end;
+    3: begin APart.ColorFont:= clTeal; end;
+    4: begin APart.ColorFont:= clRed; end;
+    5: begin APart.ColorFont:= clGray; APart.FontBold:= false; APart.FontItalic:= true; end;
+    6: begin APart.ColorFont:= $40A040; APart.FontBold:= false; APart.FontItalic:= true; end;
+    7: begin APart.ColorFont:= $4040E0; end;
+    8: begin APart.ColorFont:= clGreen; end;
+    9: begin APart.ColorFont:= $A04040; end;
   end;
 end;
 
