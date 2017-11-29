@@ -44,9 +44,6 @@ implementation
 { TForm1 }
 
 procedure TForm1.FormCreate(Sender: TObject);
-var
-  S: string;
-  i: integer;
 begin
   ed:= TATSynEdit.Create(Self);
   ed.Parent:= Self;
@@ -89,7 +86,7 @@ var
   Lexer: TATLiteLexer;
 begin
   Caption:= ExtractFileName(fn);
-  Lexer:= LexerLib.FindLexer(fn);
+  Lexer:= LexerLib.FindLexerByFilename(fn);
   if Assigned(Lexer) then
     Caption:= Caption+' ('+Lexer.LexerName+')';
   ed.AdapterForHilite:= Lexer;
