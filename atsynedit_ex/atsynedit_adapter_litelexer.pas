@@ -40,20 +40,22 @@ type
 
   TATLiteLexer = class(TATAdapterHilite)
   private
+    FRules: TList;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
+    function GetRule(AIndex: integer): TATLiteLexerRule;
   public
     LexerName: string;
     FileTypes: string;
     CaseSens: boolean;
-    Rules: TList;
     constructor Create(AOnwer: TComponent); override;
     destructor Destroy; override;
-    procedure LoadFromFile(const AFilename: string);
     procedure Clear;
+    procedure LoadFromFile(const AFilename: string);
     function IsFilenameMatch(const AFilename: string): boolean;
-    function GetRule(AIndex: integer): TATLiteLexerRule;
-    function GetDump: string;
+    function RuleCount: integer;
+    property Rules[AIndex: integer]: TATLiteLexerRule read GetRule;
+    function Dump: string;
     procedure OnEditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor); override;
     property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
@@ -68,13 +70,14 @@ type
     FList: TList;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
+    function GetLexer(AIndex: integer): TATLiteLexer;
   public
     constructor Create; virtual;
     destructor Destroy; override;
     procedure Clear;
     procedure LoadFromDir(const ADir: string);
-    function Count: integer;
-    function GetLexer(AIndex: integer): TATLiteLexer;
+    function LexerCount: integer;
+    property Lexers[AIndex: integer]: TATLiteLexer read GetLexer;
     function FindLexerByFilename(AFilename: string): TATLiteLexer;
     function FindLexerByName(const AName: string): TATLiteLexer;
     property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
@@ -107,6 +110,11 @@ begin
   FList.Clear;
 end;
 
+function TATLiteLexers.LexerCount: integer;
+begin
+  Result:= FList.Count;
+end;
+
 function TATLiteLexers.GetLexer(AIndex: integer): TATLiteLexer;
 begin
   Result:= TATLiteLexer(FList[AIndex]);
@@ -119,9 +127,9 @@ var
 begin
   Result:= nil;
   AFilename:= ExtractFileName(AFilename);
-  for i:= 0 to FList.Count-1 do
+  for i:= 0 to LexerCount-1 do
   begin
-    Lexer:= GetLexer(i);
+    Lexer:= Lexers[i];
     if Lexer.IsFilenameMatch(AFileName) then
       exit(Lexer);
   end;
@@ -133,9 +141,9 @@ var
   i: integer;
 begin
   Result:= nil;
-  for i:= 0 to FList.Count-1 do
+  for i:= 0 to LexerCount-1 do
   begin
-    Lexer:= GetLexer(i);
+    Lexer:= Lexers[i];
     if Lexer.LexerName=AName then
       exit(Lexer);
   end;
@@ -165,11 +173,6 @@ begin
   end;
 end;
 
-function TATLiteLexers.Count: integer;
-begin
-  Result:= FList.Count;
-end;
-
 { TATLiteLexerRule }
 
 constructor TATLiteLexerRule.Create(const AName, AStyle, ARegex: string; ACaseSens: boolean);
@@ -195,13 +198,13 @@ end;
 constructor TATLiteLexer.Create(AOnwer: TComponent);
 begin
   inherited;
-  Rules:= TList.Create;
+  FRules:= TList.Create;
 end;
 
 destructor TATLiteLexer.Destroy;
 begin
   Clear;
-  FreeAndNil(Rules);
+  FreeAndNil(FRules);
   inherited;
 end;
 
@@ -212,9 +215,9 @@ begin
   LexerName:= '?';
   CaseSens:= false;
 
-  for i:= Rules.Count-1 downto 0 do
-    TObject(Rules[i]).Free;
-  Rules.Clear;
+  for i:= RuleCount-1 downto 0 do
+    TObject(FRules[i]).Free;
+  FRules.Clear;
 end;
 
 function TATLiteLexer.IsFilenameMatch(const AFilename: string): boolean;
@@ -222,9 +225,14 @@ begin
   Result:= MatchesMaskList(AFilename, FileTypes, ';');
 end;
 
+function TATLiteLexer.RuleCount: integer;
+begin
+  Result:= FRules.Count;
+end;
+
 function TATLiteLexer.GetRule(AIndex: integer): TATLiteLexerRule;
 begin
-  Result:= TATLiteLexerRule(Rules[AIndex]);
+  Result:= TATLiteLexerRule(FRules[AIndex]);
 end;
 
 procedure TATLiteLexer.LoadFromFile(const AFilename: string);
@@ -264,7 +272,7 @@ begin
       if Assigned(FOnGetStyleHash) then
         rule.StyleHash:= FOnGetStyleHash(Self, rule.Style);
 
-      Rules.Add(rule);
+      FRules.Add(rule);
     end;
   finally
     keys.Free;
@@ -272,7 +280,7 @@ begin
   end;
 end;
 
-function TATLiteLexer.GetDump: string;
+function TATLiteLexer.Dump: string;
 const
   cBool: array[boolean] of string = ('false', 'true');
 var
@@ -283,8 +291,8 @@ begin
     'case_sens: '+cBool[CaseSens]+#10+
     'files: '+FileTypes+#10+
     'rules:';
-  for i:= 0 to Rules.Count-1 do
-    with GetRule(i) do
+  for i:= 0 to RuleCount-1 do
+    with Rules[i] do
       Result:= Result+#10+Format('(name: "%s", re: "%s", st: "%s", st_n: %d)',
         [Name, RegexObj.Expression, Style, StyleHash]);
 end;
@@ -315,9 +323,9 @@ begin
 
     ch:= EdLine[NPos];
     if (ch<>' ') and (ch<>#9) then
-      for IndexRule:= 0 to Rules.Count-1 do
+      for IndexRule:= 0 to RuleCount-1 do
       begin
-        Rule:= GetRule(IndexRule);
+        Rule:= Rules[IndexRule];
         NLen:= Rule.RegexObj.MatchLength(EdLine, NPos);
         if NLen>0 then
         begin
