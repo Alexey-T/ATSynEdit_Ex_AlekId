@@ -128,9 +128,9 @@ begin
     4: begin APart.ColorFont:= clRed; end;
     5: begin APart.ColorFont:= clGray; APart.FontBold:= false; APart.FontItalic:= true; end;
     6: begin APart.ColorFont:= $40A040; APart.FontBold:= false; APart.FontItalic:= true; end;
-    7: begin APart.ColorFont:= $4040E0; end;
+    7: begin APart.ColorFont:= $A04040; end;
     8: begin APart.ColorFont:= clGreen; end;
-    9: begin APart.ColorFont:= $A04040; end;
+    9: begin APart.ColorFont:= clGray; end;
   end;
 end;
 
