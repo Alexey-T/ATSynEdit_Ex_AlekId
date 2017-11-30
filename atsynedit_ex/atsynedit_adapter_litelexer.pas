@@ -185,6 +185,7 @@ begin
   RegexObj.ModifierI:= not ACaseSens;
   RegexObj.ModifierS:= false; //don't catch all text by .*
   RegexObj.ModifierM:= true; //allow to work with ^$
+  RegexObj.ModifierX:= false; //don't ingore spaces
 end;
 
 destructor TATLiteLexerRule.Destroy;
