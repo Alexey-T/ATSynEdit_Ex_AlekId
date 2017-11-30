@@ -631,8 +631,8 @@ begin
   if not Application.Terminated then
   begin
     //seems, Sleep() may hang on gtk2 on app closing
-    while FBusyTreeUpdate do begin Sleep(50); end;
-    while FBusyTimer do begin Sleep(50); end;
+    while FBusyTreeUpdate do Application.ProcessMessages;
+    while FBusyTimer do Application.ProcessMessages;
   end;
 
   if Assigned(AnClient) then
