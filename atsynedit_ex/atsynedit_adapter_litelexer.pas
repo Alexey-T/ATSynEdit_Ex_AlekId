@@ -65,14 +65,14 @@ type
 type
   { TATLiteLexers }
 
-  TATLiteLexers = class
+  TATLiteLexers = class(TComponent)
   private
     FList: TList;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
     function GetLexer(AIndex: integer): TATLiteLexer;
   public
-    constructor Create; virtual;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure Clear;
     procedure LoadFromDir(const ADir: string);
@@ -88,7 +88,7 @@ implementation
 
 { TATLiteLexers }
 
-constructor TATLiteLexers.Create;
+constructor TATLiteLexers.Create(AOwner: TComponent);
 begin
   inherited;
   FList:= TList.Create;
