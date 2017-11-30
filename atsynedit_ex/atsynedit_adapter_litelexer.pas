@@ -181,7 +181,7 @@ begin
   Name:= AName;
   Style:= AStyle;
   RegexObj:= TecRegExpr.Create;
-  RegexObj.Expression:= ARegex;
+  RegexObj.Expression:= UTF8Decode(ARegex);
   RegexObj.ModifierI:= not ACaseSens;
   RegexObj.ModifierS:= false; //don't catch all text by .*
   RegexObj.ModifierM:= true; //allow to work with ^$
@@ -252,8 +252,11 @@ begin
     try
       c.Filename:= AFileName;
     except
-      ShowMessage('Cannot load JSON lexer file:'#10+AFilename);
-      exit;
+      on E: Exception do
+        begin
+          ShowMessage('Cannot load JSON lexer file:'#10+ExtractFileName(AFilename)+#10#10+E.Message);
+          exit;
+        end;
     end;
 
     LexerName:= ChangeFileExt(ExtractFileName(AFilename), '');
