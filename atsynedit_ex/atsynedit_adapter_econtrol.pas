@@ -630,9 +630,10 @@ begin
 
   if not Application.Terminated then
   begin
-    //seems, Sleep() may hang on gtk2 on app closing
-    while FBusyTreeUpdate do Application.ProcessMessages;
-    while FBusyTimer do Application.ProcessMessages;
+    if FBusyTreeUpdate then
+      Sleep(100);
+    if FBusyTimer then
+      Sleep(TimerDuringAnalyze.Interval+50);
   end;
 
   if Assigned(AnClient) then
@@ -1015,7 +1016,9 @@ begin
     DoParseDone;
   end
   else
+  begin
     TimerDuringAnalyze.Enabled:= true;
+  end;
 end;
 
 procedure TATAdapterEControl.DoFoldAdd(AX, AY, AY2: integer; AStaple: boolean; const AHint: string);
@@ -1276,7 +1279,6 @@ begin
   if Application.Terminated then
   begin
     TimerDuringAnalyze.Enabled:= false;
-    FBusyTimer:= false;
     exit
   end;
 
@@ -1388,10 +1390,11 @@ begin
   else
   begin
     TimerDuringAnalyze.Enabled:= true;
+
     if AWait then
       while not AnClient.IsFinished do
       begin
-        Sleep(150);
+        Sleep(TimerDuringAnalyze.Interval+20);
         Application.ProcessMessages;
       end;
   end;
