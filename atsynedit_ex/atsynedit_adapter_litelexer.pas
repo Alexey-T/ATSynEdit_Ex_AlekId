@@ -48,6 +48,7 @@ type
     LexerName: string;
     FileTypes: string;
     CaseSens: boolean;
+    ConsiderSpaces: boolean;
     CommentLine: string;
     CommentBlockBegin: string;
     CommentBlockEnd: string;
@@ -218,6 +219,7 @@ var
 begin
   LexerName:= '?';
   CaseSens:= false;
+  ConsiderSpaces:= false;
 
   for i:= RuleCount-1 downto 0 do
     TObject(FRules[i]).Free;
@@ -265,6 +267,7 @@ begin
 
     LexerName:= ChangeFileExt(ExtractFileName(AFilename), '');
     CaseSens:= c.GetValue('/case_sens', false);
+    ConsiderSpaces:= c.GetValue('/consider_spaces', false);
     FileTypes:= c.GetValue('/files', '');
     CommentLine:= c.GetValue('/cmt_line', '');
     CommentBlockBegin:= c.GetValue('/cmt_block_1', '');
@@ -332,7 +335,7 @@ begin
     bRuleFound:= false;
 
     ch:= EdLine[NPos];
-    if (ch<>' ') and (ch<>#9) then
+    if ConsiderSpaces or ((ch<>' ') and (ch<>#9)) then
       for IndexRule:= 0 to RuleCount-1 do
       begin
         Rule:= Rules[IndexRule];
