@@ -48,6 +48,9 @@ type
     LexerName: string;
     FileTypes: string;
     CaseSens: boolean;
+    CommentLine: string;
+    CommentBlockBegin: string;
+    CommentBlockEnd: string;
     constructor Create(AOnwer: TComponent); override;
     destructor Destroy; override;
     procedure Clear;
@@ -263,6 +266,9 @@ begin
     LexerName:= ChangeFileExt(ExtractFileName(AFilename), '');
     CaseSens:= c.GetValue('/case_sens', false);
     FileTypes:= c.GetValue('/files', '');
+    CommentLine:= c.GetValue('/cmt_line', '');
+    CommentBlockBegin:= c.GetValue('/cmt_block_1', '');
+    CommentBlockEnd:= c.GetValue('/cmt_block_2', '');
 
     c.EnumSubKeys('/rules', keys);
     for i:= 0 to keys.Count-1 do
