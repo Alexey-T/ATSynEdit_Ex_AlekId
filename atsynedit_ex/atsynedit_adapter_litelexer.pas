@@ -16,7 +16,8 @@ uses
   Masks,
   FileUtil,
   at__jsonConf,
-  ec_RegExpr;
+  ec_RegExpr,
+  math;
 
 type
   { TATLiteLexerRule }
@@ -43,6 +44,9 @@ type
     FRules: TList;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
+    FGapFromLeft: integer;
+      //calc tokens not from ACharIndex, but from n chars lefter,
+      //to hilite comments/strings, partly scrolled to left
     function GetRule(AIndex: integer): TATLiteLexerRule;
   public
     LexerName: string;
@@ -60,6 +64,7 @@ type
     function RuleCount: integer;
     property Rules[AIndex: integer]: TATLiteLexerRule read GetRule;
     function Dump: string;
+    property GapFromLeft: integer read FGapFromLeft write FGapFromLeft;
     procedure OnEditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor); override;
     property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
@@ -204,6 +209,7 @@ constructor TATLiteLexer.Create(AOnwer: TComponent);
 begin
   inherited;
   FRules:= TList.Create;
+  FGapFromLeft:= 200;
 end;
 
 destructor TATLiteLexer.Destroy;
@@ -311,6 +317,17 @@ begin
 end;
 
 
+var
+  TempParts: TATLineParts;
+
+procedure DoPartsDeleteBeginning(var AParts: TATLineParts; ADeleteCount: integer);
+begin
+  FillChar(TempParts, SizeOf(TempParts), 0);
+  Move(AParts[ADeleteCount], TempParts, (High(AParts)+1-ADeleteCount)*SizeOf(TATLinePart));
+  Move(TempParts, AParts, SizeOf(TempParts));
+end;
+
+
 procedure TATLiteLexer.OnEditorCalcHilite(Sender: TObject;
   var AParts: TATLineParts; ALineIndex, ACharIndex, ALineLen: integer;
   var AColorAfterEol: TColor);
@@ -318,13 +335,15 @@ var
   Ed: TATSynEdit;
   EdLine: UnicodeString;
   ch: WideChar;
-  NParts, NPos, NLen, IndexRule: integer;
+  NParts, NPos, NLen, IndexRule, NRealGap, NFirstUsedPart, i: integer;
   Rule: TATLiteLexerRule;
   bLastFound, bRuleFound: boolean;
 begin
   if Application.Terminated then exit;
   Ed:= Sender as TATSynEdit;
-  EdLine:= Copy(Ed.Strings.Lines[ALineIndex], ACharIndex, ALineLen);
+
+  NRealGap:= Min(FGapFromLeft, ACharIndex-1);
+  EdLine:= Copy(Ed.Strings.Lines[ALineIndex], ACharIndex-NRealGap, ALineLen+NRealGap);
   NParts:= 0;
   NPos:= 1;
   bLastFound:= false;
@@ -376,6 +395,25 @@ begin
 
     bLastFound:= bRuleFound;
   until false;
+
+  //now fix result, considering gap
+  NFirstUsedPart:= 0;
+  for i:= 0 to High(AParts) do
+  begin
+    if AParts[i].Len=0 then break;
+    Dec(AParts[i].Offset, NRealGap);
+    if AParts[i].Offset+AParts[i].Len<=0 then
+      NFirstUsedPart:= i+1;
+  end;
+
+  //delete parts before NFirstUsedPart
+  if NFirstUsedPart>0 then
+  begin
+    DoPartsDeleteBeginning(AParts, NFirstUsedPart);
+    //fix 1st part
+    if AParts[0].Offset<0 then
+      AParts[0].Offset:= 0;
+  end;
 end;
 
 end.
