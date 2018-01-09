@@ -343,7 +343,7 @@ begin
   Ed:= Sender as TATSynEdit;
 
   NRealGap:= Min(FGapFromLeft, ACharIndex-1);
-  EdLine:= Copy(Ed.Strings.Lines[ALineIndex], ACharIndex-NRealGap, ALineLen+NRealGap);
+  EdLine:= Ed.Strings.LineSub(ALineIndex, ACharIndex-NRealGap, ALineLen+NRealGap);
   NParts:= 0;
   NPos:= 1;
   bLastFound:= false;
