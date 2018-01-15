@@ -209,7 +209,7 @@ constructor TATLiteLexer.Create(AOnwer: TComponent);
 begin
   inherited;
   FRules:= TList.Create;
-  FGapFromLeft:= 200;
+  FGapFromLeft:= 100;
 end;
 
 destructor TATLiteLexer.Destroy;
