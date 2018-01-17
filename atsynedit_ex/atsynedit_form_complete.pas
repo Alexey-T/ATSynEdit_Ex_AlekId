@@ -36,7 +36,8 @@ procedure DoEditorCompletionListbox(AEd: TATSynEdit;
   AOnGetProp: TATCompletionPropEvent;
   AOnResult: TATCompletionResultEvent = nil;
   const ASnippetId: string = '';
-  ASelectedIndex: integer = 0);
+  ASelectedIndex: integer = 0;
+  AAllowCarets: boolean = false);
 
 procedure EditorGetCurrentWord(Ed: TATSynEdit; const AWordChars: atString;
   out AWord: atString; out ACharsLeft, ACharsRight: integer);
@@ -125,10 +126,12 @@ procedure DoEditorCompletionListbox(AEd: TATSynEdit;
   AOnGetProp: TATCompletionPropEvent;
   AOnResult: TATCompletionResultEvent = nil;
   const ASnippetId: string = '';
-  ASelectedIndex: integer = 0);
+  ASelectedIndex: integer = 0;
+  AAllowCarets: boolean = false);
 begin
   if AEd.ModeReadOnly then exit;
-  if AEd.Carets.Count<>1 then exit;
+  if AEd.Carets.Count>1 then
+    if not AAllowCarets then exit;
 
   if FormComplete=nil then
     FormComplete:= TFormATSynEditComplete.Create(nil);
@@ -146,32 +149,34 @@ var
   Caret: TATCaretItem;
   Pos, Shift, PosAfter: TPoint;
   StrText, Str1, Str2: atString;
+  i: integer;
 begin
   if AStr='' then exit;
   StrText:= Utf8Decode(SGetItem(AStr, CompletionOps.SuffixChar));
   Str1:= Utf8Decode(SGetItem(AStr, CompletionOps.SuffixChar));
   Str2:= Utf8Decode(SGetItem(AStr, CompletionOps.SuffixChar));
 
-  begin
-    Caret:= Editor.Carets[0];
-    Pos.X:= Caret.PosX;
-    Pos.Y:= Caret.PosY;
+  //must support carets, for HTML
+  Editor.Strings.BeginUndoGroup;
+  try
+    for i:= 0 to Editor.Carets.Count-1 do
+    begin
+      Caret:= Editor.Carets[i];
+      Pos.X:= Caret.PosX;
+      Pos.Y:= Caret.PosY;
 
-    FCharsLeft:= Min(Pos.X, FCharsLeft);
-    Dec(Pos.X, FCharsLeft);
+      FCharsLeft:= Min(Pos.X, FCharsLeft);
+      Dec(Pos.X, FCharsLeft);
 
-    Editor.Strings.BeginUndoGroup;
-    try
       Editor.Strings.TextDeleteRight(Pos.X, Pos.Y, FCharsLeft+FCharsRight, Shift, PosAfter, false);
       Editor.Strings.TextInsert(Pos.X, Pos.Y, StrText+Str1+Str2, false, Shift, PosAfter);
-    finally
-      Editor.Strings.EndUndoGroup;
+
+      Caret.PosX:= Pos.X+Length(StrText)+Length(Str1);
+      Caret.EndX:= -1;
+      Caret.EndY:= -1;
     end;
-
-    Caret.PosX:= Pos.X+Length(StrText)+Length(Str1);
-    Caret.EndX:= -1;
-    Caret.EndY:= -1;
-
+  finally
+    Editor.Strings.EndUndoGroup;
     Editor.Update(true);
     Editor.DoEventChange;
   end;

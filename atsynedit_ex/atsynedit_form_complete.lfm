@@ -15,7 +15,7 @@ object FormATSynEditComplete: TFormATSynEditComplete
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   OnUTF8KeyPress = FormUTF8KeyPress
-  LCLVersion = '1.7'
+  LCLVersion = '1.9.0.0'
   object List: TATListbox
     Left = 4
     Height = 232
@@ -23,13 +23,12 @@ object FormATSynEditComplete: TFormATSynEditComplete
     Width = 312
     Align = alClient
     BorderSpacing.Around = 4
-    CanGetFocus = False
     Color = clSilver
     DoubleBuffered = True
     ItemHeight = 28
+    OwnerDrawn = True
     ParentColor = False
     OnClick = ListClick
     OnDrawItem = ListDrawItem
-    OwnerDrawn = True
   end
 end

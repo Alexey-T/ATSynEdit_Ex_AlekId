@@ -275,7 +275,10 @@ begin
     Acp.List.LoadFromFile(AFilenameHtmlList);
   end;
 
-  DoEditorCompletionListbox(AEdit, @Acp.DoOnGetCompleteProp);
+  DoEditorCompletionListbox(AEdit, @Acp.DoOnGetCompleteProp,
+    nil, '', 0,
+    true //allow carets in HTML like Sublime does
+    );
 end;
 
 initialization
