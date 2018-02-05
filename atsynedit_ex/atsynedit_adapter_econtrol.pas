@@ -27,6 +27,17 @@ var
   cAdapterIdleTextSize: integer = 10*1000;
 
 type
+  TATRangeInCodeTree = class
+  public
+    //idea: adapter fills TokenIndexNN,
+    //but app will convert them (if needed) to TextPosNN and use only TextPosNN
+    TokenIndexBegin: integer;
+    TokenIndexEnd: integer;
+    TextPosBegin: TPoint;
+    TextPosEnd: TPoint;
+  end;
+
+type
   { TATRangeColored }
 
   TATRangeColored = class
