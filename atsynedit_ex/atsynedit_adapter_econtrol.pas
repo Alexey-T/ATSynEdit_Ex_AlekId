@@ -57,6 +57,8 @@ type
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
 
+procedure ClearTreeviewWithData(ATree: TTreeView);
+
 type
   { TATAdapterEControl }
 
@@ -187,6 +189,21 @@ begin
   if (P1.Y<P2.Y) then exit(-1);
   if (P1.X>P2.X) then exit(1) else exit(-1);
 end;
+
+procedure ClearTreeviewWithData(ATree: TTreeView);
+var
+  i: integer;
+begin
+  for i:= ATree.Items.Count-1 downto 0 do
+    with ATree.Items[i] do
+      if Data<>nil then
+      begin
+        TObject(Data).Free;
+        Data:= nil;
+      end;
+  ATree.Items.Clear;
+end;
+
 
 procedure ApplyPartStyleFromEcontrolStyle(var part: TATLinePart; st: TecSyntaxFormat);
 begin
@@ -751,7 +768,7 @@ begin
   //ATree.Items.BeginUpdate;
 
   try
-    ATree.Items.Clear;
+    ClearTreeviewWithData(ATree);
     if AnClient=nil then exit;
 
     for i:= 0 to AnClient.RangeCount-1 do
