@@ -963,16 +963,27 @@ end;
 
 procedure TATAdapterEControl.TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
 var
-  R: TecTextRange;
   Node: TTreeNode;
+  Pos1, Pos2: TPoint;
+  i: integer;
 begin
-  if ATree.Items.Count=0 then exit;
-  R:= TreeGetRangeOfPosition(APos);
-  if R=nil then begin {showmessage('r=nil');} exit; end;
-  Node:= ATree.Items.FindNodeWithData(R);
-  if Node=nil then begin {showmessage('node=nil');} exit; end;
-  Node.MakeVisible;
-  ATree.Selected:= Node;
+  for i:= 0 to ATree.Items.Count-1 do
+  begin
+    Node:= ATree.Items[i];
+    if Node.Data<>nil then
+      if TObject(Node.Data) is TATRangeInCodeTree then
+      begin
+        TreeGetPositionOfRange_Codetree(TATRangeInCodeTree(Node.Data), Pos1, Pos2);
+        //finding is not full ok: it finds range by Y only...
+        //todo: find deepest range, which includes APos
+        if (Pos1.Y=APos.Y) then
+        begin
+          Node.MakeVisible;
+          ATree.Selected:= Node;
+          exit
+        end;
+      end;
+  end;
 end;
 
 
