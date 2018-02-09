@@ -27,6 +27,9 @@ var
   cAdapterIdleTextSize: integer = 10*1000;
 
 type
+
+  { TATRangeInCodeTree }
+
   TATRangeInCodeTree = class
   public
     //idea: adapter fills TokenIndexNN,
@@ -35,6 +38,7 @@ type
     TokenIndexEnd: integer;
     TextPosBegin: TPoint;
     TextPosEnd: TPoint;
+    procedure Assign(Src: TATRangeInCodeTree);
   end;
 
 type
@@ -232,6 +236,15 @@ begin
   part.BorderRight:= cBorderEc[st.BorderTypeRight];
 end;
 
+{ TATRangeInCodeTree }
+
+procedure TATRangeInCodeTree.Assign(Src: TATRangeInCodeTree);
+begin
+  TokenIndexBegin:= Src.TokenIndexBegin;
+  TokenIndexEnd:= Src.TokenIndexEnd;
+  TextPosBegin:= Src.TextPosBegin;
+  TextPosEnd:= Src.TextPosEnd;
+end;
 
 { TATRangeColored }
 
