@@ -136,8 +136,8 @@ type
     property TreeBusy: boolean read FBusyTreeUpdate;
     procedure TreeFill(ATree: TTreeView);
     procedure TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
-    function TreeGetPositionOfRange(R: TecTextRange): TPoint;
-    procedure TreeGetPositionOfRange(R: TecTextRange; out P1, P2: TPoint);
+    procedure TreeGetPositionOfRange_EC(R: TecTextRange; out P1, P2: TPoint);
+    procedure TreeGetPositionOfRange_Codetree(R: TATRangeInCodeTree; out P1, P2: TPoint);
     function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 
     //sublexers
@@ -761,6 +761,7 @@ var
   NodeParent, NodeGroup: TTreeNode;
   NodeText, NodeTextGroup, SItem: string;
   NodeData: pointer;
+  RangeNew: TATRangeInCodeTree;
   i: integer;
 begin
   FStopTreeUpdate:= false;
@@ -822,6 +823,23 @@ begin
       NodeParent.ImageIndex:= R.Rule.TreeItemImage;
       NodeParent.SelectedIndex:= NodeParent.ImageIndex;
     end;
+
+    //tree filled with Data as TecTextRange
+    //now replace all Data to TATRangeInCodetree
+    for i:= 0 to ATree.Items.Count-1 do
+    begin
+      NodeParent:= ATree.Items[i];
+      if NodeParent.Data=nil then Continue;
+      R:= TecTextRange(NodeParent.Data);
+
+      RangeNew:= TATRangeInCodeTree.Create;
+      RangeNew.TokenIndexBegin:= R.StartIdx;
+      RangeNew.TokenIndexEnd:= R.EndIdx;
+      RangeNew.TextPosBegin:= Point(-1, -1);
+      RangeNew.TextPosEnd:= Point(-1, -1);
+      NodeParent.Data:= RangeNew;
+    end;
+
   finally
     //ATree.Items.EndUpdate;
     ATree.Invalidate;
@@ -829,21 +847,7 @@ begin
   end;
 end;
 
-function TATAdapterEControl.TreeGetPositionOfRange(R: TecTextRange): TPoint;
-var
-  n: integer;
-begin
-  Result:= Point(0, 0);
-  if R=nil then exit;
-  if AnClient=nil then exit;
-
-  n:= R.StartIdx;
-  if n>=0 then
-    Result:= AnClient.Tags[n].PointStart;
-  //Result:= Buffer.StrToCaret(R.StartPos);
-end;
-
-procedure TATAdapterEControl.TreeGetPositionOfRange(R: TecTextRange; out P1, P2: TPoint);
+procedure TATAdapterEControl.TreeGetPositionOfRange_EC(R: TecTextRange; out P1, P2: TPoint);
 var
   tokenStart, tokenEnd: TecSyntToken;
 begin
@@ -856,6 +860,35 @@ begin
   tokenEnd:= AnClient.Tags[R.EndIdx];
   P1:= tokenStart.PointStart;
   P2:= tokenEnd.PointEnd;
+end;
+
+procedure TATAdapterEControl.TreeGetPositionOfRange_Codetree(R: TATRangeInCodeTree;
+  out P1, P2: TPoint);
+var
+  tokenStart, tokenEnd: TecSyntToken;
+begin
+  P1:= Point(-1, -1);
+  P2:= Point(-1, -1);
+  if R=nil then exit;
+  if AnClient=nil then exit;
+
+  if (R.TextPosBegin.Y>=0) and
+     (R.TextPosEnd.Y>=0) then
+  begin
+    P1:= R.TextPosBegin;
+    P2:= R.TextPosEnd;
+  end
+  else
+  if (R.TokenIndexBegin>=0) and
+     (R.TokenIndexEnd>=0) then
+  begin
+    tokenStart:= AnClient.Tags[R.TokenIndexBegin];
+    tokenEnd:= AnClient.Tags[R.TokenIndexEnd];
+    P1:= tokenStart.PointStart;
+    P2:= tokenEnd.PointEnd;
+    R.TextPosBegin:= P1;
+    R.TextPosEnd:= P2;
+  end;
 end;
 
 function TATAdapterEControl.TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
