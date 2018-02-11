@@ -672,9 +672,15 @@ begin
   if not Application.Terminated then
   begin
     if FBusyTreeUpdate then
+    begin
       Sleep(100);
+      //Application.ProcessMessages;
+    end;
     if FBusyTimer then
+    begin
       Sleep(TimerDuringAnalyze.Interval+50);
+      //Application.ProcessMessages;
+    end;
   end;
 
   if Assigned(AnClient) then
