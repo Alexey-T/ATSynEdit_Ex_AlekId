@@ -137,7 +137,6 @@ type
     procedure TreeFill(ATree: TTreeView);
     procedure TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
     procedure TreeGetPositionOfRange_EC(R: TecTextRange; out APosBegin, APosEnd: TPoint);
-    procedure TreeGetPositionOfRange_Codetree(R: TATRangeInCodeTree; out APosBegin, APosEnd: TPoint);
     function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 
     //sublexers
@@ -882,13 +881,6 @@ begin
     APosEnd:=  AnClient.Tags[R.EndIdx].PointEnd;
 end;
 
-procedure TATAdapterEControl.TreeGetPositionOfRange_Codetree(R: TATRangeInCodeTree;
-  out APosBegin, APosEnd: TPoint);
-begin
-  APosBegin:= R.PosBegin;
-  APosEnd:= R.PosEnd;
-end;
-
 function TATAdapterEControl.TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 var
   R: TecTextRange;
@@ -964,7 +956,9 @@ begin
       if TObject(Node.Data) is TATRangeInCodeTree then
       begin
         Range:= TATRangeInCodeTree(Node.Data);
-        TreeGetPositionOfRange_Codetree(Range, Pos1, Pos2);
+        Pos1:= Range.PosBegin;
+        Pos2:= Range.PosEnd;
+
         if IsPosInRange(
           APos.X, APos.Y,
           Pos1.X, Pos1.Y,
