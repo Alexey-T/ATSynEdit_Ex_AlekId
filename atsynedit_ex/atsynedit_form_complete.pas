@@ -101,6 +101,7 @@ type
     SepChar: char;
     HintChar: char;
     SuffixChar: char;
+    AppendOpeningBracket: boolean;
     ListSort: boolean;
     KeyUpDownWrap: boolean;
     ItemHeight: integer;
@@ -354,8 +355,9 @@ begin
     SDesc:= GetItemText(SList[List.ItemIndex], CompletionOps.IndexOfDesc);
     Result:= SText;
 
-    if SBeginsWith(SDesc, '(') then
-      Result:= Result+CompletionOps.SuffixChar+'(';
+    if CompletionOps.AppendOpeningBracket then
+      if SBeginsWith(SDesc, '(') then
+        Result:= Result+CompletionOps.SuffixChar+'(';
   end;
 end;
 
@@ -532,6 +534,7 @@ initialization
     SepChar := '|';
     HintChar := #9;
     SuffixChar := #1;
+    AppendOpeningBracket:= true;
     ListSort := false;
     KeyUpDownWrap := true;
     ItemHeight := 17;
