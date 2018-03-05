@@ -100,6 +100,7 @@ type
       ADefColor: TColor; AEditorIndex: integer): TColor;
     function GetTokenColorBG_FromMultiLineTokens(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
+    function EditorRunningCommand: boolean;
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
@@ -1052,6 +1053,9 @@ procedure TATAdapterEControl.UpdateRanges;
 var
   i: integer;
 begin
+  //dont clear ranges too early (and flicker with empty fold bar)
+  if EditorRunningCommand then exit;
+
   DoClearRanges;
   UpdateRangesFold;
   UpdateRangesSublex; //sublexer ranges last
@@ -1062,6 +1066,17 @@ begin
   if EdList.Count>0 then
     for i:= 0 to EdList.Count-1 do
       UpdateRangesActive(TATSynEdit(EdList[i]));
+end;
+
+function TATAdapterEControl.EditorRunningCommand: boolean;
+var
+  i: integer;
+begin
+  Result:= false;
+  if EdList.Count>0 then
+    for i:= 0 to EdList.Count-1 do
+      if TATSynEdit(EdList[i]).IsRunningCommand then
+        exit(true);
 end;
 
 procedure TATAdapterEControl.DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
