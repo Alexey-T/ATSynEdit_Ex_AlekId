@@ -1045,7 +1045,10 @@ begin
   if AAnalyze then
   begin
     DoAnalize(Ed, false);
-    UpdateRanges;
+
+    //dont clear ranges too early (and flicker with empty fold bar)
+    if not EditorRunningCommand then
+      UpdateRanges;
   end;
 end;
 
@@ -1053,9 +1056,6 @@ procedure TATAdapterEControl.UpdateRanges;
 var
   i: integer;
 begin
-  //dont clear ranges too early (and flicker with empty fold bar)
-  if EditorRunningCommand then exit;
-
   DoClearRanges;
   UpdateRangesFold;
   UpdateRangesSublex; //sublexer ranges last
