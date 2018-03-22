@@ -104,6 +104,7 @@ type
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
+    procedure UpdateRangesActiveAll;
     procedure UpdateSeparators;
     procedure UpdateRangesSublex;
     procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
@@ -1053,8 +1054,6 @@ begin
 end;
 
 procedure TATAdapterEControl.UpdateRanges;
-var
-  i: integer;
 begin
   DoClearRanges;
   UpdateRangesFold;
@@ -1063,9 +1062,15 @@ begin
   if EnabledLineSeparators then
     UpdateSeparators;
 
-  if EdList.Count>0 then
-    for i:= 0 to EdList.Count-1 do
-      UpdateRangesActive(TATSynEdit(EdList[i]));
+  UpdateRangesActiveAll;
+end;
+
+procedure TATAdapterEControl.UpdateRangesActiveAll;
+var
+  i: integer;
+begin
+  for i:= 0 to EdList.Count-1 do
+    UpdateRangesActive(TATSynEdit(EdList[i]));
 end;
 
 function TATAdapterEControl.EditorRunningCommand: boolean;
