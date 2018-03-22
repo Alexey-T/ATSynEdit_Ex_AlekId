@@ -1048,7 +1048,8 @@ begin
     DoAnalize(Ed, false);
 
     //dont clear ranges too early (and flicker with empty fold bar)
-    if not EditorRunningCommand then
+    if not EditorRunningCommand
+      or IsDynamicHiliteEnabled then
       UpdateRanges;
   end;
 end;
