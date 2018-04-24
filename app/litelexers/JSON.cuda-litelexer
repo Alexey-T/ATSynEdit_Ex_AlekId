@@ -1,5 +1,9 @@
 {
-  "files": "*.json",
+  "about": "JSON lexer by Alexey T.",
+  "files": "*.json;*.cuda-litelexer",
+  "cmt_line": "//",
+  "cmt_block_1": "",
+  "cmt_block_2": "",
   "case_sens": true,
   "rules": {
     "cmt": {

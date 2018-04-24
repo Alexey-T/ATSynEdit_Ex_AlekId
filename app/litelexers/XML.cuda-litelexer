@@ -1,5 +1,9 @@
 {
+  "about": "XML lexer by Alexey T.",
   "files": "*.xml;*.xsl",
+  "cmt_line": "",
+  "cmt_block_1": "<!--",
+  "cmt_block_2": "-->",
   "case_sens": true,
   "rules": {
     "cmt": {
