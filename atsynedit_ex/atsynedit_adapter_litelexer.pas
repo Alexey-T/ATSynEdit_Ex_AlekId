@@ -44,7 +44,6 @@ type
     FRules: TList;
     FOnGetStyleHash: TATLiteLexer_GetStyleHash;
     FOnApplyStyle: TATLiteLexer_ApplyStyle;
-    FGapFromLeft: integer;
       //calc tokens not from ACharIndex, but from n chars lefter,
       //to hilite comments/strings, partly scrolled to left
     function GetRule(AIndex: integer): TATLiteLexerRule;
@@ -64,7 +63,6 @@ type
     function RuleCount: integer;
     property Rules[AIndex: integer]: TATLiteLexerRule read GetRule;
     function Dump: string;
-    property GapFromLeft: integer read FGapFromLeft write FGapFromLeft;
     procedure OnEditorCalcHilite(Sender: TObject; var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer; var AColorAfterEol: TColor); override;
     property OnGetStyleHash: TATLiteLexer_GetStyleHash read FOnGetStyleHash write FOnGetStyleHash;
@@ -209,7 +207,6 @@ constructor TATLiteLexer.Create(AOnwer: TComponent);
 begin
   inherited;
   FRules:= TList.Create;
-  FGapFromLeft:= 100;
 end;
 
 destructor TATLiteLexer.Destroy;
@@ -335,21 +332,21 @@ var
   Ed: TATSynEdit;
   EdLine: UnicodeString;
   ch: WideChar;
-  NParts, NPos, NLen, IndexRule, NRealGap, NFirstUsedPart, i: integer;
+  NParts, NPos, NLen, IndexRule: integer;
   Rule: TATLiteLexerRule;
   bLastFound, bRuleFound: boolean;
 begin
   if Application.Terminated then exit;
   Ed:= Sender as TATSynEdit;
 
-  NRealGap:= Min(FGapFromLeft, ACharIndex-1);
-  EdLine:= Ed.Strings.LineSub(ALineIndex, ACharIndex-NRealGap, ALineLen+NRealGap);
+  EdLine:= Ed.Strings.Lines[ALineIndex];
   NParts:= 0;
   NPos:= 1;
   bLastFound:= false;
 
   repeat
     if NPos>Length(EdLine) then Break;
+    if NPos>ACharIndex+ALineLen then Break;
     if NParts>=High(TATLineParts) then Break;
     bRuleFound:= false;
 
@@ -368,52 +365,43 @@ begin
 
     if not bRuleFound then
     begin
-      if (NParts=0) or bLastFound then
+      //add one char to part
+      if NPos+NLen>=ACharIndex then
       begin
-        Inc(NParts);
-        AParts[NParts-1].Offset:= NPos-1;
-        AParts[NParts-1].Len:= 1;
-      end
-      else
-      begin
-        Inc(AParts[NParts-1].Len);
+        if (NParts=0) or bLastFound then
+        begin
+          Inc(NParts);
+          AParts[NParts-1].Offset:= NPos-ACharIndex;
+          AParts[NParts-1].Len:= 1;
+        end
+        else
+        begin
+          Inc(AParts[NParts-1].Len);
+        end;
+        AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
+        AParts[NParts-1].ColorFont:= clBlack;
       end;
-      AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
-      AParts[NParts-1].ColorFont:= clBlack;
+
       Inc(NPos);
     end
     else
     begin
-      Inc(NParts);
-      AParts[NParts-1].Offset:= NPos-1;
-      AParts[NParts-1].Len:= NLen;
-      AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
-      if Assigned(FOnApplyStyle) then
-        FOnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
+      //found rule, add NLen chars to part
+      if NPos+NLen>=ACharIndex then
+      begin
+        Inc(NParts);
+        AParts[NParts-1].Offset:= NPos-ACharIndex;
+        AParts[NParts-1].Len:= NLen;
+        AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
+        if Assigned(FOnApplyStyle) then
+          FOnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
+      end;
+
       Inc(NPos, NLen);
     end;
 
     bLastFound:= bRuleFound;
   until false;
-
-  //now fix result, considering gap
-  NFirstUsedPart:= 0;
-  for i:= 0 to High(AParts) do
-  begin
-    if AParts[i].Len=0 then break;
-    Dec(AParts[i].Offset, NRealGap);
-    if AParts[i].Offset+AParts[i].Len<=0 then
-      NFirstUsedPart:= i+1;
-  end;
-
-  //delete parts before NFirstUsedPart
-  if NFirstUsedPart>0 then
-  begin
-    DoPartsDeleteBeginning(AParts, NFirstUsedPart);
-    //fix 1st part
-    if AParts[0].Offset<0 then
-      AParts[0].Offset:= 0;
-  end;
 end;
 
 end.
