@@ -333,6 +333,7 @@ var
   EdLine: UnicodeString;
   ch: WideChar;
   NParts, NPos, NLen, IndexRule: integer;
+  FixedOffset, FixedLen: integer;
   Rule: TATLiteLexerRule;
   bLastFound, bRuleFound: boolean;
 begin
@@ -390,8 +391,18 @@ begin
       if NPos+NLen>=ACharIndex then
       begin
         Inc(NParts);
-        AParts[NParts-1].Offset:= NPos-ACharIndex;
-        AParts[NParts-1].Len:= NLen;
+        FixedOffset:= NPos-ACharIndex;
+        FixedLen:= NLen;
+
+        //don't make negative offset, it works, but with issue on Win
+        if FixedOffset<0 then
+        begin
+          Inc(FixedLen, FixedOffset);
+          FixedOffset:= 0;
+        end;
+
+        AParts[NParts-1].Offset:= FixedOffset;
+        AParts[NParts-1].Len:= FixedLen;
         AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
         if Assigned(FOnApplyStyle) then
           FOnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
