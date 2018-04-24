@@ -22,6 +22,10 @@
       "regex": "\\d+(\\.\\d+)?([eE][-\\+]?\\d+)?",
       "style": "Number"
     },
+    "num_hex": {
+      "regex": "\\$[0-9a-fA-F]+",
+      "style": "Number"
+    },
     "str": {
       "regex": "\\'.*?\\'",
       "style": "String"

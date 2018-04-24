@@ -67,7 +67,7 @@ begin
   Styles.Add('TagProp');
   Styles.Add('TagBound');
 
-  LexerLib:= TATLiteLexers.Create;
+  LexerLib:= TATLiteLexers.Create(Self);
   LexerLib.OnGetStyleHash:= @LexerGetStyleHash;
   LexerLib.OnApplyStyle:= @LexerApplyStyle;
   LexerLib.LoadFromDir(ExtractFilePath(ExtractFileDir(Application.ExeName))+'litelexers');
