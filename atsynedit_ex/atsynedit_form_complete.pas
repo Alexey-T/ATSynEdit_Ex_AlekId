@@ -88,6 +88,12 @@ const
   cCompletionColumnCount = 5;
 
 type
+  TATCompletionUpDownAtEdge = (
+    cudIgnore,
+    cudWrap,
+    cudCloseForm
+    );
+
   TATCompletionOptions = record
     ColorFont: array[0..cCompletionColumnCount-1] of TColor;
     ColorBg: TColor;
@@ -103,7 +109,7 @@ type
     SuffixChar: char;
     AppendOpeningBracket: boolean;
     ListSort: boolean;
-    KeyUpDownWrap: boolean;
+    UpDownAtEdge: TATCompletionUpDownAtEdge;
     ItemHeight: integer;
     BorderSize: integer;
     FormSizeX: integer;
@@ -218,8 +224,12 @@ begin
     if List.ItemIndex>0 then
       List.ItemIndex:= List.ItemIndex-1
     else
-    if CompletionOps.KeyUpDownWrap then
-      List.ItemIndex:= List.ItemCount-1;
+    case CompletionOps.UpDownAtEdge of
+      cudWrap:
+        List.ItemIndex:= List.ItemCount-1;
+      cudCloseForm:
+        Close;
+    end;
     key:= 0;
     exit
   end;
@@ -229,8 +239,12 @@ begin
     if List.ItemIndex<List.ItemCount-1 then
       List.ItemIndex:= List.ItemIndex+1
     else
-    if CompletionOps.KeyUpDownWrap then
-      List.ItemIndex:= 0;
+    case CompletionOps.UpDownAtEdge of
+      cudWrap:
+        List.ItemIndex:= 0;
+      cudCloseForm:
+        Close;
+    end;
     key:= 0;
     exit
   end;
@@ -536,7 +550,7 @@ initialization
     SuffixChar := #1;
     AppendOpeningBracket:= true;
     ListSort := false;
-    KeyUpDownWrap := true;
+    UpDownAtEdge := cudWrap;
     ItemHeight := 17;
     BorderSize := 4;
     FormSizeX := 500;
