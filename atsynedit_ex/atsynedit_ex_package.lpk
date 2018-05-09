@@ -10,8 +10,13 @@
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
     </CompilerOptions>
-    <Description Value="Package additional to ATSynEdit (to avoid build errors), contains syntax highlight adapters.
-Contains copy of newer FPC FPJSON package, renamed files."/>
+    <Description Value="Package, additional to ATSynEdit. It has the following parts splitted from ATSynEdit, to avoid build errors:
+- Adapter for EControl (SynWrite) lexers
+- Adapter for CudaText lite lexers
+- Units which implement smart auto-completion forms (base form, for CSS lexer, for HTML lexer, for SynWrite files)
+
+Requires packages: ATSynEdit, ATFlatControls, EControl
+"/>
     <License Value="MPL 2.0 or LGPL"/>
     <Version Major="1" Minor="1"/>
     <Files Count="8">
@@ -41,11 +46,11 @@ Contains copy of newer FPC FPJSON package, renamed files."/>
       </Item6>
       <Item7>
         <Filename Value="at__jsonconf.pp"/>
-        <UnitName Value="jsonConf"/>
+        <UnitName Value="at__jsonconf"/>
       </Item7>
       <Item8>
         <Filename Value="at__jsonparser.pp"/>
-        <UnitName Value="jsonparser"/>
+        <UnitName Value="at__jsonparser"/>
       </Item8>
     </Files>
     <RequiredPkgs Count="4">
