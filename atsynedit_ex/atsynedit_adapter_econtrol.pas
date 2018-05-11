@@ -439,7 +439,7 @@ begin
     if not Rng.Active[AEdit.EditorIndex] then Continue;
     if Rng.Rule=nil then Continue;
     if not Rng.Rule.DynSelectMin then Continue;
-    if Rng.Rule.DynHighlight<>dhBound then Continue;
+    if not (Rng.Rule.DynHighlight in [dhBound, dhRange, dhRangeNoBound]) then Continue;
     //take prev ranges which contain this range
     for j:= i-1 downto 0 do
     begin
