@@ -71,6 +71,7 @@ type
     TimerDuringAnalyze: TTimer;
     CurrentIdleInterval: integer;
     FEnabledLineSeparators: boolean;
+    FEnabledSublexerTreeNodes: boolean;
     FBusyTreeUpdate: boolean;
     FBusyTimer: boolean;
     FStopTreeUpdate: boolean;
@@ -123,6 +124,7 @@ type
     property Lexer: TecSyntAnalyzer read GetLexer write SetLexer;
     function LexerAtPos(Pnt: TPoint): TecSyntAnalyzer;
     property EnabledLineSeparators: boolean read FEnabledLineSeparators write SetEnabledLineSeparators;
+    property EnabledSublexerTreeNodes: boolean read FEnabledSublexerTreeNodes write FEnabledSublexerTreeNodes default false;
     procedure DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
     procedure DoAnalyzeFromLine(ALine: integer; AWait: boolean);
     procedure Stop;
@@ -601,6 +603,7 @@ begin
   Buffer:= TATStringBuffer.Create;
   ListColoredRanges:= TList.Create;
   FEnabledLineSeparators:= false;
+  FEnabledSublexerTreeNodes:= false;
 
   TimerDuringAnalyze:= TTimer.Create(Self);
   TimerDuringAnalyze.Enabled:= false;
@@ -774,6 +777,7 @@ var
   R, RangeParent: TecTextRange;
   NodeParent, NodeGroup: TTreeNode;
   NodeText, NodeTextGroup, SItem: string;
+  NameRule, NameLexer: string;
   NodeData: pointer;
   RangeNew: TATRangeInCodeTree;
   i: integer;
@@ -785,6 +789,7 @@ begin
   try
     ClearTreeviewWithData(ATree);
     if AnClient=nil then exit;
+    NameLexer:= AnClient.Owner.LexerName;
 
     for i:= 0 to AnClient.RangeCount-1 do
     begin
@@ -796,6 +801,15 @@ begin
       R:= AnClient.Ranges[i];
       if R.Rule=nil then Continue;
       if not R.Rule.DisplayInTree then Continue;
+
+      if not FEnabledSublexerTreeNodes then
+      begin
+        NameRule:= R.Rule.SyntOwner.LexerName;
+        //must allow lexer name "PHP_" if main lexer is "PHP"
+        if NameRule[Length(NameRule)]='_' then
+          SetLength(NameRule, Length(NameRule)-1);
+        if NameRule<>NameLexer then Continue;
+      end;
 
       NodeText:= Trim(Utf8Encode(AnClient.GetRangeName(R)));
       NodeTextGroup:= Trim(Utf8Encode(AnClient.GetRangeGroup(R)));
