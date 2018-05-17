@@ -390,7 +390,6 @@ begin
       //found rule, add NLen chars to part
       if NPos+NLen>=ACharIndex then
       begin
-        Inc(NParts);
         FixedOffset:= NPos-ACharIndex;
         FixedLen:= NLen;
 
@@ -401,11 +400,15 @@ begin
           FixedOffset:= 0;
         end;
 
-        AParts[NParts-1].Offset:= FixedOffset;
-        AParts[NParts-1].Len:= FixedLen;
-        AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
-        if Assigned(FOnApplyStyle) then
-          FOnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
+        if FixedLen>0 then //must ignore parts with Len=0
+        begin
+          Inc(NParts);
+          AParts[NParts-1].Offset:= FixedOffset;
+          AParts[NParts-1].Len:= FixedLen;
+          AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
+          if Assigned(FOnApplyStyle) then
+            FOnApplyStyle(Self, Rule.StyleHash, AParts[NParts-1]);
+        end;
       end;
 
       Inc(NPos, NLen);
