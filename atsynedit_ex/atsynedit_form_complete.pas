@@ -445,6 +445,8 @@ procedure TFormATSynEditComplete.DoUpdate;
 var
   AText: string;
   P: TPoint;
+  RectMon: TRect;
+  NewY: integer;
 begin
   if Assigned(FOnGetProp) then
     FOnGetProp(Editor, AText, FCharsLeft, FCharsRight);
@@ -470,6 +472,15 @@ begin
   P.X:= Editor.Carets[0].CoordX-Editor.TextCharSize.X*FCharsLeft;
   P.Y:= Editor.Carets[0].CoordY+Editor.TextCharSize.Y;
   P:= Editor.ClientToScreen(P);
+
+  //check that form fits on the bottom
+  RectMon:= Monitor.BoundsRect;
+  if P.Y+CompletionOps.FormSizeY>= RectMon.Bottom then
+  begin
+    NewY:= P.Y-Editor.TextCharSize.y-CompletionOps.FormSizeY;
+    if NewY>=RectMon.Top then
+      P.Y:= NewY;
+  end;
 
   SetBounds(P.X, P.Y, CompletionOps.FormSizeX, CompletionOps.FormSizeY);
   Show;
