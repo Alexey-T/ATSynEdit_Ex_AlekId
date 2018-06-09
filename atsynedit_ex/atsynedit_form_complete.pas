@@ -458,7 +458,7 @@ begin
   if SList.Count=0 then exit;
   if CompletionOps.ListSort then SList.Sort;
 
-  List.ItemCount:= SList.Count;
+  List.VirtualItemCount:= SList.Count;
   List.ItemIndex:= 0;
 
   Color:= CompletionOps.ColorBg;
