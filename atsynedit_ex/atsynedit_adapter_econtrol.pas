@@ -65,7 +65,6 @@ type
   TATAdapterEControl = class(TATAdapterHilite)
   private
     EdList: TList;
-    AnClient: TecClientSyntAnalyzer;
     Buffer: TATStringBuffer;
     ListColoredRanges: TList;
     TimerDuringAnalyze: TTimer;
@@ -94,8 +93,6 @@ type
     procedure DoParseDone;
     function GetIdleInterval: integer;
     function GetRangeParent(R: TecTextRange): TecTextRange;
-    procedure GetTokenProps(token: TecSyntToken; out APntFrom, APntTo: TPoint; out
-      ATokenString, ATokenStyle: string);
     function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: TPoint; ACond: TATRangeCond): boolean;
     function GetTokenColorBG_FromColoredRanges(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
@@ -117,6 +114,8 @@ type
     function GetLexerSuportsDynamicHilite: boolean;
     function IsDynamicHiliteEnabled: boolean;
   public
+    AnClient: TecClientSyntAnalyzer;
+    //
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure AddEditor(AEditor: TComponent); override;
@@ -135,6 +134,9 @@ type
       ATokenString, ATokenStyle: string);
     procedure GetTokenAtPos(APos: TPoint; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
+    function GetTokenString(token: TecSyntToken): string;
+    procedure GetTokenProps(token: TecSyntToken; out APntFrom, APntTo: TPoint;
+      out ATokenString, ATokenStyle: string);
 
     //support for syntax-tree
     property TreeBusy: boolean read FBusyTreeUpdate;
@@ -686,12 +688,21 @@ begin
 end;
 
 
+
+function TATAdapterEControl.GetTokenString(token: TecSyntToken): string;
+begin
+  if Assigned(Buffer) then
+    Result:= Utf8Encode(Buffer.SubString(token.StartPos+1, token.EndPos-token.StartPos))
+  else
+    Result:= '';
+end;
+
 procedure TATAdapterEControl.GetTokenProps(token: TecSyntToken;
   out APntFrom, APntTo: TPoint; out ATokenString, ATokenStyle: string);
 begin
   APntFrom:= token.PointStart;
   APntTo:= token.PointEnd;
-  ATokenString:= Utf8Encode(Buffer.SubString(token.StartPos+1, token.EndPos-token.StartPos));
+  ATokenString:= GetTokenString(token);
   if Assigned(token.Style) then
     ATokenStyle:= token.Style.DisplayName
   else
