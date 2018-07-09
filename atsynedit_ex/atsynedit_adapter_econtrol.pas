@@ -1127,7 +1127,7 @@ begin
   end
   else
   begin
-    NLine:= Min(AEdit.LineBottom+1, Buffer.Count-1);
+    NLine:= Min(AEdit.GetVisibleLines, Buffer.Count-1);
     NPos:= Buffer.CaretToStr(Point(0, NLine));
     AnClient.AppendToPos(NPos);
     AnClient.IdleAppend;
