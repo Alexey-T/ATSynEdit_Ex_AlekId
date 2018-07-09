@@ -21,9 +21,13 @@ uses
   ec_SyntAnal;
 
 var
+  //interval of TimerDuringAnalyze
   cAdapterTimerDuringAnalyzeInterval: integer = 200;
+  //after N ticks of TimerDuringAnalize, editor will repaint to show first colored lines
   cAdapterTimerTicksToInitialUpdate: integer = 2;
+  //ATSynEdit.OnIdle timer interval
   cAdapterIdleInterval: integer = 500;
+  //ATSynEdit.OnIdle will fire only if text size is bigger
   cAdapterIdleTextSize: integer = 10*1000;
 
 type
