@@ -23,8 +23,6 @@ uses
 var
   //interval of TimerDuringAnalyze
   cAdapterTimerDuringAnalyzeInterval: integer = 200;
-  //after N ticks of TimerDuringAnalize, editor will repaint to show first colored lines
-  cAdapterTimerTicksToInitialUpdate: integer = 2;
   //ATSynEdit.OnIdle timer interval
   cAdapterIdleInterval: integer = 500;
   //ATSynEdit.OnIdle will fire only if text size is bigger
@@ -78,8 +76,6 @@ type
     FBusyTreeUpdate: boolean;
     FBusyTimer: boolean;
     FStopTreeUpdate: boolean;
-    FParsePausePassed: boolean;
-    FParseTicks: integer;
     FOnLexerChange: TNotifyEvent;
     FOnParseBegin: TNotifyEvent;
     FOnParseDone: TNotifyEvent;
@@ -1139,11 +1135,11 @@ begin
 
   if AnClient.IsFinished then
   begin
-    FParsePausePassed:= true;
     DoParseDone;
   end
   else
   begin
+    UpdateEditors(true, true); //since begin of file is parsed
     TimerDuringAnalyze.Enabled:= true;
   end;
 end;
@@ -1410,25 +1406,14 @@ begin
   end;
 
   if not Assigned(AnClient) then Exit;
-  Inc(FParseTicks);
 
   FBusyTimer:= true;
   try
     if AnClient.IsFinished then
     begin
-      FParsePausePassed:= true;
       TimerDuringAnalyze.Enabled:= false;
       UpdateRanges;
       DoParseDone;
-    end
-    else
-    begin
-      if not FParsePausePassed then
-        if FParseTicks>=cAdapterTimerTicksToInitialUpdate then
-        begin
-          FParsePausePassed:= true;
-          UpdateEditors(true, true);
-        end;
     end;
   finally
     FBusyTimer:= false;
@@ -1487,8 +1472,6 @@ procedure TATAdapterEControl.DoParseBegin;
 begin
   if Assigned(FOnParseBegin) then
     FOnParseBegin(Self);
-  FParsePausePassed:= false;
-  FParseTicks:= 0;
   FStopTreeUpdate:= false;
 end;
 
