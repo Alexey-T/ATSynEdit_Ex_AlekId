@@ -1127,7 +1127,12 @@ begin
   end
   else
   begin
-    NLine:= Min(AEdit.GetVisibleLines, Buffer.Count-1);
+    //LineBottom=0, if file just opened at beginning.
+    //or >0 of file is edited at some scroll pos
+    NLine:= AEdit.LineBottom;
+    if NLine=0 then
+      NLine:= AEdit.GetVisibleLines;
+    NLine:= Min(NLine, Buffer.Count-1);
     NPos:= Buffer.CaretToStr(Point(0, NLine));
     AnClient.AppendToPos(NPos);
     AnClient.IdleAppend;
@@ -1139,7 +1144,7 @@ begin
   end
   else
   begin
-    UpdateEditors(true, true); //since begin of file is parsed
+    UpdateEditors(true, true); //some portion is parsed already
     TimerDuringAnalyze.Enabled:= true;
   end;
 end;
