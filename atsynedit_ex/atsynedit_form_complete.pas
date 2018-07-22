@@ -178,6 +178,12 @@ begin
       Editor.Strings.TextDeleteRight(Pos.X, Pos.Y, FCharsLeft+FCharsRight, Shift, PosAfter, false);
       Editor.Strings.TextInsert(Pos.X, Pos.Y, StrText+Str1+Str2, false, Shift, PosAfter);
 
+      //adjust markers/attrs
+      Editor.DoCaretsShift(Pos.X, Pos.Y,
+        Length(StrText)+Length(Str1)+Length(Str2) - FCharsLeft-FCharsRight, 0,
+        PosAfter
+        );
+
       Caret.PosX:= Pos.X+Length(StrText)+Length(Str1);
       Caret.EndX:= -1;
       Caret.EndY:= -1;
