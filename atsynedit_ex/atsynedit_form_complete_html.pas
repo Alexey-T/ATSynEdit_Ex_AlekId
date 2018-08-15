@@ -14,7 +14,8 @@ uses
   ATSynEdit,
   ATSynEdit_Carets,
   ATSynEdit_RegExpr,
-  Dialogs;
+  Dialogs,
+  Math;
 
 //it needs file html_list.ini from SynWrite distro
 procedure DoEditorCompletionHtml(AEdit: TATSynEdit;
@@ -112,7 +113,7 @@ const
   cRegexTagOnly = '^\w*$';
   cRegexTagClose = '^/\w*$';
   //character class for all chars inside quotes
-  cRegexChars = '[\s\w,\.:;\-\+\*\?=\(\)\[\]\{\}/\\\|~`\^\$&%\#@!]';
+  cRegexChars = '[\s\w,\.:;\-\+\*\?=\(\)\[\]\{\}/\\\|~`\^\$&%\#@!\n]';
   //regex to catch attrib name, followed by "=" and not-closed quote, only at line end
   cRegexAttr = '\b([\w\-]+)\s*\=\s*([''"]' + cRegexChars + '*)?$';
   //regex group
@@ -123,17 +124,28 @@ const
 var
   Caret: TATCaretItem;
   S: atString;
-  N: integer;
+  NPrev, N: integer;
+const
+  cMaxLinesPerTag=8;
 begin
   STag:= '';
   SAttr:= '';
   AMode:= acpModeNone;
 
-  //str before caret
+  //cal str before caret
+  if Ed.Carets.Count=0 then exit;
   Caret:= Ed.Carets[0];
   S:= Ed.Strings.Lines[Caret.PosY];
   S:= Copy(S, 1, Caret.PosX);
   if S='' then Exit;
+
+  //add few previous lines to support multiline tags
+  if Caret.PosY>0 then
+  begin
+    NPrev:= Max(0, Caret.PosY-cMaxLinesPerTag);
+    for N:= Caret.PosY-1 downto NPrev do
+      S:= Ed.Strings.Lines[N]+' '+S;
+  end;
 
   //cut string before last "<" or ">" char
   N:= Length(S);
