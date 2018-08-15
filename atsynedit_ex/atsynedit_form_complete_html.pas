@@ -26,12 +26,11 @@ type
     acpModeNone,
     acpModeTags,
     acpModeAttrs,
-    acpModeVals
+    acpModeValues
     );
 
 //detect tag and its attribute at caret pos
-procedure EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string;
-  out AMode: TCompleteHtmlMode);
+function EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string): TCompleteHtmlMode;
 function EditorHasCssAtCaret(Ed: TATSynEdit): boolean;
 
 
@@ -106,8 +105,9 @@ begin
   end;
 end;
 
-procedure EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string; out AMode: TCompleteHtmlMode);
+function EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string): TCompleteHtmlMode;
 const
+  cMaxLinesPerTag = 10;
   //regex to catch tag name at line start
   cRegexTagPart = '^\w+\b';
   cRegexTagOnly = '^\w*$';
@@ -125,19 +125,16 @@ var
   Caret: TATCaretItem;
   S: atString;
   NPrev, N: integer;
-const
-  cMaxLinesPerTag=8;
 begin
   STag:= '';
   SAttr:= '';
-  AMode:= acpModeNone;
+  Result:= acpModeNone;
 
   //cal str before caret
   if Ed.Carets.Count=0 then exit;
   Caret:= Ed.Carets[0];
   S:= Ed.Strings.Lines[Caret.PosY];
   S:= Copy(S, 1, Caret.PosX);
-  if S='' then Exit;
 
   //add few previous lines to support multiline tags
   if Caret.PosY>0 then
@@ -155,23 +152,23 @@ begin
 
   STag:= SFindRegex(S, cRegexTagClose, cGroupTagClose);
   if STag<>'' then
-    begin AMode:= acpModeTags; exit end;
+    exit(acpModeTags);
 
   STag:= SFindRegex(S, cRegexTagOnly, cGroupTagOnly);
   if STag<>'' then
-    begin AMode:= acpModeTags; exit end;
+    exit(acpModeTags);
 
   STag:= SFindRegex(S, cRegexTagPart, cGroupTagPart);
   if STag<>'' then
   begin
     SAttr:= SFindRegex(S, cRegexAttr, cGroupAttr);
     if SAttr<>'' then
-      AMode:= acpModeVals
+      Result:= acpModeValues
     else
-      AMode:= acpModeAttrs;
+      Result:= acpModeAttrs;
   end
   else
-    AMode:= acpModeTags;
+    Result:= acpModeTags;
 end;
 
 function EditorHasCssAtCaret(Ed: TATSynEdit): boolean;
@@ -179,8 +176,8 @@ var
   STag, SAttr: string;
   Mode: TCompleteHtmlMode;
 begin
-  EditorGetHtmlTag(Ed, STag, SAttr, Mode);
-  Result:= (Mode=acpModeVals) and (LowerCase(SAttr)='style');
+  Mode:= EditorGetHtmlTag(Ed, STag, SAttr);
+  Result:= (Mode=acpModeValues) and (LowerCase(SAttr)='style');
 end;
 
 
@@ -199,7 +196,7 @@ begin
   ACharsLeft:= 0;
   ACharsRight:= 0;
 
-  EditorGetHtmlTag(Ed, s_tag, s_attr, mode);
+  mode:= EditorGetHtmlTag(Ed, s_tag, s_attr);
   EditorGetCurrentWord(Ed, cWordChars, s_word, ACharsLeft, ACharsRight);
 
   case mode of
@@ -245,7 +242,7 @@ begin
         until false;
       end;
 
-    acpModeVals:
+    acpModeValues:
       begin
         s_item:= List.Values[s_tag];
         if s_item='' then exit;
