@@ -107,7 +107,7 @@ end;
 
 function EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string): TCompleteHtmlMode;
 const
-  cMaxLinesPerTag = 10;
+  cMaxLinesPerTag = 40;
   //regex to catch tag name at line start
   cRegexTagPart = '^\w+\b';
   cRegexTagOnly = '^\w*$';
