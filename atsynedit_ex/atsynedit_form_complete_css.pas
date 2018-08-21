@@ -90,6 +90,7 @@ procedure TAcp.DoOnGetCompleteProp(Sender: TObject; out AText: string; out
 const
   cWordChars = '-#!@.'; //don't include ':'
 var
+  Caret: TATCaretItem;
   s_word: atString;
   s_tag, s_item, s_val: string;
   n: integer;
@@ -114,7 +115,18 @@ begin
   else
   //show list of all tags
   begin
-    EditorGetCurrentWord(Ed, cWordChars, s_word, ACharsLeft, ACharsRight);
+    Caret:= Ed.Carets[0];
+    EditorGetCurrentWord(Ed,
+      Caret.PosX, Caret.PosY,
+      cWordChars,
+      s_word,
+      ACharsLeft,
+      ACharsRight);
+
+    //if caret is inside word
+    //  back|ground: left;
+    //then we must replace "background" with ": "
+
 
     for n:= 0 to List.Count-1 do
     begin

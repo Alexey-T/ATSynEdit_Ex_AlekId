@@ -39,7 +39,9 @@ procedure DoEditorCompletionListbox(AEd: TATSynEdit;
   ASelectedIndex: integer = 0;
   AAllowCarets: boolean = false);
 
-procedure EditorGetCurrentWord(Ed: TATSynEdit; const AWordChars: atString;
+procedure EditorGetCurrentWord(Ed: TATSynEdit;
+  APosX, APosY: integer;
+  const AWordChars: atString;
   out AWord: atString; out ACharsLeft, ACharsRight: integer);
 
 type
@@ -493,7 +495,9 @@ begin
 end;
 
 
-procedure EditorGetCurrentWord(Ed: TATSynEdit; const AWordChars: atString;
+procedure EditorGetCurrentWord(Ed: TATSynEdit;
+  APosX, APosY: integer;
+  const AWordChars: atString;
   out AWord: atString; out ACharsLeft, ACharsRight: integer);
 var
   str: atString;
@@ -503,8 +507,10 @@ begin
   ACharsLeft:= 0;
   ACharsRight:= 0;
 
-  str:= Ed.Strings.Lines[Ed.Carets[0].PosY];
-  n:= Ed.Carets[0].PosX;
+  if not Ed.Strings.IsIndexValid(APosY) then exit;
+  str:= Ed.Strings.Lines[APosY];
+
+  n:= APosX;
   if (n>Length(str)) then exit;
 
   while (n>0) and (IsCharWord(str[n], AWordChars)) do
@@ -514,7 +520,7 @@ begin
     Inc(ACharsLeft);
   end;
 
-  n:= Ed.Carets[0].PosX;
+  n:= APosX;
   while (n<Length(str)) and (IsCharWord(str[n+1], AWordChars)) do
   begin
     Inc(n);

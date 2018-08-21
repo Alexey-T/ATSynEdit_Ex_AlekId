@@ -186,6 +186,7 @@ procedure TAcp.DoOnGetCompleteProp(Sender: TObject; out AText: string; out
 const
   cWordChars = '-';
 var
+  Caret: TATCaretItem;
   mode: TCompleteHtmlMode;
   s_word: atString;
   s_tag, s_attr, s_item, s_subitem, s_value: string;
@@ -196,8 +197,14 @@ begin
   ACharsLeft:= 0;
   ACharsRight:= 0;
 
+  Caret:= Ed.Carets[0];
   mode:= EditorGetHtmlTag(Ed, s_tag, s_attr);
-  EditorGetCurrentWord(Ed, cWordChars, s_word, ACharsLeft, ACharsRight);
+  EditorGetCurrentWord(Ed,
+    Caret.PosX, Caret.PosY,
+    cWordChars,
+    s_word,
+    ACharsLeft,
+    ACharsRight);
 
   case mode of
     acpModeTags:

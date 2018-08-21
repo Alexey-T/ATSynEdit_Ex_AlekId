@@ -11,7 +11,8 @@ interface
 uses
   Classes, SysUtils, StrUtils, Graphics,
   Dialogs,
-  ATSynEdit;
+  ATSynEdit,
+  ATSynEdit_Carets;
 
 procedure DoEditorCompletionAcp(AEdit: TATSynEdit;
   const AFilenameAcp: string; ACaseSens, AIsPascal: boolean);
@@ -168,6 +169,7 @@ end;
 procedure TAcp.DoOnGetCompleteProp(Sender: TObject; out AText: string; out
   ACharsLeft, ACharsRight: integer);
 var
+  Caret: TATCaretItem;
   s_word_w: atString;
   s_type, s_text, s_desc, s_word: string;
   n: integer;
@@ -176,7 +178,14 @@ begin
   AText:= '';
   ACharsLeft:= 0;
   ACharsRight:= 0;
-  EditorGetCurrentWord(Ed, FWordChars, s_word_w, ACharsLeft, ACharsRight);
+
+  Caret:= Ed.Carets[0];
+  EditorGetCurrentWord(Ed,
+    Caret.PosX, Caret.PosY,
+    FWordChars,
+    s_word_w,
+    ACharsLeft,
+    ACharsRight);
   s_word:= Utf8Encode(s_word_w);
 
   for n:= 0 to ListAcpText.Count-1 do
