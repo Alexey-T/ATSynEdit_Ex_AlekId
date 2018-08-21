@@ -65,7 +65,7 @@ begin
   end;
 end;
 
-function EditorGetCssTag(Ed: TATSynEdit): string;
+function EditorGetCssTag(Ed: TATSynEdit; APosX, APosY: integer): string;
 const
   //char class for all chars in css values
   cRegexChars = '[''"\w\s\.,:/~&%@!=\#\$\^\-\+\(\)\?]';
@@ -73,13 +73,10 @@ const
   cRegexProp = '([\w\-]+):\s*' + cRegexChars + '*$';
   cRegexGroup = 1; //group 1 in (..)
 var
-  Caret: TATCaretItem;
   S: atString;
 begin
   Result:= '';
-  Caret:= Ed.Carets[0];
-  S:= Ed.Strings.Lines[Caret.PosY];
-  S:= Copy(S, 1, Caret.PosX);
+  S:= Ed.Strings.LineSub(APosY, 1, APosX);
   if S<>'' then
     Result:= SFindRegex(S, cRegexProp, cRegexGroup);
 end;
@@ -99,8 +96,9 @@ begin
   AText:= '';
   ACharsLeft:= 0;
   ACharsRight:= 0;
+  Caret:= Ed.Carets[0];
 
-  s_tag:= EditorGetCssTag(Ed);
+  s_tag:= EditorGetCssTag(Ed, Caret.PosX, Caret.PosY);
   if s_tag<>'' then
   //show list of values for s_tag
   begin
@@ -115,7 +113,6 @@ begin
   else
   //show list of all tags
   begin
-    Caret:= Ed.Carets[0];
     EditorGetCurrentWord(Ed,
       Caret.PosX, Caret.PosY,
       cWordChars,
