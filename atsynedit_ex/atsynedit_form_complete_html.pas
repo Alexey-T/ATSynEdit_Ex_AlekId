@@ -30,7 +30,9 @@ type
     );
 
 //detect tag and its attribute at caret pos
-function EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string): TCompleteHtmlMode;
+function EditorGetHtmlTag(Ed: TATSynedit;
+  APosX, APosY: integer;
+  out STag, SAttr: string): TCompleteHtmlMode;
 function EditorHasCssAtCaret(Ed: TATSynEdit): boolean;
 
 
@@ -105,7 +107,9 @@ begin
   end;
 end;
 
-function EditorGetHtmlTag(Ed: TATSynedit; out STag, SAttr: string): TCompleteHtmlMode;
+function EditorGetHtmlTag(Ed: TATSynedit;
+  APosX, APosY: integer;
+  out STag, SAttr: string): TCompleteHtmlMode;
 const
   cMaxLinesPerTag = 40;
   //regex to catch tag name at line start
@@ -122,7 +126,6 @@ const
   cGroupTagClose = 0;
   cGroupAttr = 1;
 var
-  Caret: TATCaretItem;
   S: atString;
   NPrev, N: integer;
 begin
@@ -131,16 +134,13 @@ begin
   Result:= acpModeNone;
 
   //cal str before caret
-  if Ed.Carets.Count=0 then exit;
-  Caret:= Ed.Carets[0];
-  S:= Ed.Strings.Lines[Caret.PosY];
-  S:= Copy(S, 1, Caret.PosX);
+  S:= Ed.Strings.LineSub(APosY, 1, APosX);
 
   //add few previous lines to support multiline tags
-  if Caret.PosY>0 then
+  if APosY>0 then
   begin
-    NPrev:= Max(0, Caret.PosY-cMaxLinesPerTag);
-    for N:= Caret.PosY-1 downto NPrev do
+    NPrev:= Max(0, APosY-cMaxLinesPerTag);
+    for N:= APosY-1 downto NPrev do
       S:= Ed.Strings.Lines[N]+' '+S;
   end;
 
@@ -173,10 +173,12 @@ end;
 
 function EditorHasCssAtCaret(Ed: TATSynEdit): boolean;
 var
+  Caret: TATCaretItem;
   STag, SAttr: string;
   Mode: TCompleteHtmlMode;
 begin
-  Mode:= EditorGetHtmlTag(Ed, STag, SAttr);
+  Caret:= Ed.Carets[0];
+  Mode:= EditorGetHtmlTag(Ed, Caret.PosX, Caret.PosY, STag, SAttr);
   Result:= (Mode=acpModeValues) and (LowerCase(SAttr)='style');
 end;
 
@@ -198,9 +200,14 @@ begin
   ACharsRight:= 0;
 
   Caret:= Ed.Carets[0];
-  mode:= EditorGetHtmlTag(Ed, s_tag, s_attr);
+  mode:= EditorGetHtmlTag(Ed,
+    Caret.PosX,
+    Caret.PosY,
+    s_tag,
+    s_attr);
   EditorGetCurrentWord(Ed,
-    Caret.PosX, Caret.PosY,
+    Caret.PosX,
+    Caret.PosY,
     cWordChars,
     s_word,
     ACharsLeft,
