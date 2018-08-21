@@ -126,7 +126,9 @@ begin
     //if caret is inside word
     //  back|ground: left;
     //then we must replace "background" with ": "
-
+    s_item:= Ed.Strings.LineSub(Caret.PosY, Caret.PosX+ACharsRight+1, 2);
+    if s_item=': ' then
+      Inc(ACharsRight, 2);
 
     for n:= 0 to List.Count-1 do
     begin
