@@ -473,7 +473,7 @@ var
     FillChar(part{%H-}, SizeOf(part), 0);
     part.Offset:= AOffset;
     part.Len:= ALen;
-    part.ColorFont:= AColorFont;
+    part.ColorFont:= clNone; //must set clNone for empty (space) parts
     part.ColorBG:= GetTokenColorBG_FromColoredRanges(
       Point(AX+AOffset, ALine),
       AColorBG,
