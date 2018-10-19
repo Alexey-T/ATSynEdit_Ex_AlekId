@@ -479,9 +479,9 @@ var
     part^.Offset:= AOffset;
     part^.Len:= ALen;
 
-    //check that token's last char is space (so token is space only),
+    //check that part's last char is space (ie it's space part),
     //and set for it clNone
-    if Strings.LineSub(ALine, AOffset+ALen, 1)=' ' then
+    if Strings.LineSub(ALine, AOffset+ALen+1, 1)=' ' then
       part^.ColorFont:= clNone
     else
       part^.ColorFont:= nColorText;
