@@ -465,28 +465,28 @@ procedure TATAdapterEControl.DoCalcParts(var AParts: TATLineParts; ALine, AX,
 var
   Ed: TATSynEdit;
   Strings: TATStrings;
-  NColorFont: TColor;
+  nColorText: TColor;
   partindex: integer;
   //
   procedure AddMissingPart(AOffset, ALen: integer);
   var
-    Part: ^TATLinePart;
+    part: PATLinePart;
   begin
     if ALen<=0 then Exit;
-    Part:= @AParts[partindex];
-    FillChar(Part^, SizeOf(TATLinePart), 0);
+    part:= @AParts[partindex];
+    FillChar(part^, SizeOf(TATLinePart), 0);
 
-    Part^.Offset:= AOffset;
-    Part^.Len:= ALen;
+    part^.Offset:= AOffset;
+    part^.Len:= ALen;
 
     //check that token's last char is space (so token is space only),
     //and set for it clNone
     if Strings.LineSub(ALine, AOffset+ALen, 1)=' ' then
-      Part^.ColorFont:= clNone
+      part^.ColorFont:= clNone
     else
-      Part^.ColorFont:= NColorFont;
+      part^.ColorFont:= nColorText;
 
-    Part^.ColorBG:= GetTokenColorBG_FromColoredRanges(
+    part^.ColorBG:= GetTokenColorBG_FromColoredRanges(
       Point(AX+AOffset, ALine),
       AColorBG,
       AEditorIndex);
@@ -508,7 +508,7 @@ begin
 
   Ed:= TATSynEdit(EdList[0]);
   Strings:= Ed.Strings;
-  NColorFont:= Ed.Colors.TextFont;
+  nColorText:= Ed.Colors.TextFont;
 
   startindex:= DoFindToken(Point(0, ALine));
   if startindex<0 then
