@@ -420,9 +420,14 @@ begin
   end;
 
   //usual case, n columns, tab-char separates hint (in hint window)
-  SHint:= SGetItemAtEnd(Str, CompletionOps.HintChar);
-  if AIndex=List.ItemIndex then
-    DoHintShow(SHint);
+  i:= Pos(CompletionOps.HintChar, Str);
+  if i>0 then
+  begin
+    SHint:= Copy(Str, i+1, MaxInt);
+    SetLength(Str, i-1);
+    if AIndex=List.ItemIndex then
+      DoHintShow(SHint);
+  end;
 
   NSize:= CompletionOps.TextIndent0;
 
