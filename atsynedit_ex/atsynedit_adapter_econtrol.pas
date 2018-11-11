@@ -76,6 +76,8 @@ type
     FBusyTreeUpdate: boolean;
     FBusyTimer: boolean;
     FStopTreeUpdate: boolean;
+    FTimeParseBegin: QWORD;
+    FTimeParseElapsed: integer;
     FOnLexerChange: TNotifyEvent;
     FOnParseBegin: TNotifyEvent;
     FOnParseDone: TNotifyEvent;
@@ -121,6 +123,7 @@ type
     procedure AddEditor(AEditor: TComponent); override;
     //
     property Lexer: TecSyntAnalyzer read GetLexer write SetLexer;
+    property LexerParsingElapsed: integer read FTimeParseElapsed;
     function LexerAtPos(Pnt: TPoint): TecSyntAnalyzer;
     property EnabledLineSeparators: boolean read FEnabledLineSeparators write SetEnabledLineSeparators;
     property EnabledSublexerTreeNodes: boolean read FEnabledSublexerTreeNodes write FEnabledSublexerTreeNodes default false;
@@ -1499,6 +1502,7 @@ begin
   if Assigned(FOnParseBegin) then
     FOnParseBegin(Self);
   FStopTreeUpdate:= false;
+  FTimeParseBegin:= GetTickCount64;
 end;
 
 procedure TATAdapterEControl.DoParseDone;
@@ -1506,6 +1510,8 @@ begin
   //UpdateRanges call needed for small files, which are parsed to end by one IdleAppend call,
   //and timer didn't tick
   UpdateRanges;
+
+  FTimeParseElapsed:= GetTickCount64-FTimeParseBegin;
 
   if Assigned(FOnParseDone) then
     FOnParseDone(Self);
