@@ -495,6 +495,9 @@ begin
       P.Y:= NewY;
   end;
 
+  if Application.MainForm.FormStyle in [fsStayOnTop, fsSystemStayOnTop] then
+    FormStyle:= Application.MainForm.FormStyle;
+
   SetBounds(P.X, P.Y, CompletionOps.FormSizeX, CompletionOps.FormSizeY);
   Show;
 end;
