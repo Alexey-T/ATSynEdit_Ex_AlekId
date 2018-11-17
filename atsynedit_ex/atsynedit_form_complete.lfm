@@ -6,7 +6,7 @@ object FormATSynEditComplete: TFormATSynEditComplete
   BorderStyle = bsNone
   ClientHeight = 240
   ClientWidth = 320
-  FormStyle = fsStayOnTop
+  FormStyle = fsNormal
   KeyPreview = True
   OnClose = FormClose
   OnCreate = FormCreate
