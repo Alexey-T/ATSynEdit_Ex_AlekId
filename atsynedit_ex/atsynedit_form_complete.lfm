@@ -4,6 +4,7 @@ object FormATSynEditComplete: TFormATSynEditComplete
   Top = 447
   Width = 320
   BorderStyle = bsNone
+  Caption = 'Auto-completion'
   ClientHeight = 240
   ClientWidth = 320
   FormStyle = fsNormal
