@@ -72,11 +72,11 @@ type
     FSelectedIndex: integer;
     procedure DoHintHide;
     procedure DoHintShow(const AHint: string);
-    procedure DoReplaceTo(AStr: string);
+    procedure DoReplaceTo(AStr: string; AWithBracket: boolean);
     procedure DoResult;
     procedure DoUpdate;
     function GetItemText(S: string; AIndex: integer): string;
-    function GetResultText: string;
+    procedure GetResultText(out AText: string; out AWithBracket: boolean);
   public
     { public declarations }
     property Editor: TATSynEdit read FEdit write FEdit;
@@ -153,11 +153,11 @@ begin
   FormComplete.DoUpdate;
 end;
 
-procedure TFormATSynEditComplete.DoReplaceTo(AStr: string);
+procedure TFormATSynEditComplete.DoReplaceTo(AStr: string; AWithBracket: boolean);
 var
   Caret: TATCaretItem;
   Pos, Shift, PosAfter: TPoint;
-  StrText, Str1, Str2: atString;
+  StrText, Str1, Str2, StrToInsert: atString;
   i: integer;
 begin
   if AStr='' then exit;
@@ -178,15 +178,21 @@ begin
       Dec(Pos.X, FCharsLeft);
 
       Editor.Strings.TextDeleteRight(Pos.X, Pos.Y, FCharsLeft+FCharsRight, Shift, PosAfter, false);
-      Editor.Strings.TextInsert(Pos.X, Pos.Y, StrText+Str1+Str2, false, Shift, PosAfter);
+
+      StrToInsert:= StrText+Str1+Str2;
+      if AWithBracket then
+        if Editor.Strings.TextSubstring(Pos.X, Pos.Y, Pos.X+1, Pos.Y)<>'(' then
+          StrToInsert+= '(';
+
+      Editor.Strings.TextInsert(Pos.X, Pos.Y, StrToInsert, false, Shift, PosAfter);
 
       //adjust markers/attrs
       Editor.DoCaretsShift(Pos.X, Pos.Y,
-        Length(StrText)+Length(Str1)+Length(Str2) - FCharsLeft-FCharsRight, 0,
+        Length(StrToInsert) - FCharsLeft-FCharsRight, 0,
         PosAfter
         );
 
-      Caret.PosX:= Pos.X+Length(StrText)+Length(Str1);
+      Caret.PosX:= Pos.X+Length(StrToInsert)-Length(Str2);
       Caret.EndX:= -1;
       Caret.EndY:= -1;
     end;
@@ -372,20 +378,19 @@ begin
     Result:= SGetItem(S, CompletionOps.SepChar);
 end;
 
-function TFormATSynEditComplete.GetResultText: string;
+procedure TFormATSynEditComplete.GetResultText(out AText: string; out AWithBracket: boolean);
 var
-  SText, SDesc: string;
+  SDesc: string;
 begin
-  Result:= '';
+  AText:= '';
   if List.ItemIndex>=0 then
   begin
-    SText:= GetItemText(SList[List.ItemIndex], CompletionOps.IndexOfText);
+    AText:= GetItemText(SList[List.ItemIndex], CompletionOps.IndexOfText);
     SDesc:= GetItemText(SList[List.ItemIndex], CompletionOps.IndexOfDesc);
-    Result:= SText;
 
-    if CompletionOps.AppendOpeningBracket then
-      if SBeginsWith(SDesc, '(') then
-        Result:= Result+CompletionOps.SuffixChar+'(';
+    AWithBracket:=
+      CompletionOps.AppendOpeningBracket and
+      SBeginsWith(SDesc, '(');
   end;
 end;
 
@@ -451,11 +456,17 @@ begin
 end;
 
 procedure TFormATSynEditComplete.DoResult;
+var
+  Str: string;
+  WithBracket: boolean;
 begin
   if Assigned(FOnResult) then
     FOnResult(Self, FSnippetId, List.ItemIndex)
   else
-    DoReplaceTo(GetResultText);
+  begin
+    GetResultText(Str, WithBracket);
+    DoReplaceTo(Str, WithBracket);
+  end;
 
   Close;
 end;
