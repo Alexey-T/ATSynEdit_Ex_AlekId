@@ -103,7 +103,7 @@ type
     FontStyles: array[0..cCompletionColumnCount-1] of TFontStyles;
     FontName: string;
     FontSize: integer;
-    CharsCloseListbox: string;
+    CommitChars: string;
     IndexOfText: integer;
     IndexOfDesc: integer;
     SepChar: char;
@@ -329,6 +329,7 @@ procedure TFormATSynEditComplete.FormUTF8KeyPress(Sender: TObject;
   var UTF8Key: TUTF8Char);
 var
   Str: atString;
+  bCommit: boolean;
 begin
   inherited;
 
@@ -344,12 +345,17 @@ begin
   //skip control Ascii chars
   if Ord(UTF8Key[1])<32 then Exit;
 
+  bCommit:= Pos(UTF8Key, CompletionOps.CommitChars)>0;
+  if bCommit then
+    DoResult;
+
   Str:= UTF8Decode(UTF8Key);
   FEdit.DoCommand(cCommand_TextInsert, Str);
   DoUpdate;
 
-  if Pos(UTF8Key, CompletionOps.CharsCloseListbox)>0 then
+  if bCommit then
     Close;
+
   UTF8Key:= '';
 end;
 
@@ -573,7 +579,7 @@ initialization
     FontStyles[0] := [fsBold];
     FontName := 'default';
     FontSize := 10;
-    CharsCloseListbox := ' .,;/\''"=<>()[]{}';
+    CommitChars := ' .,;/\''"=<>()[]{}';
     IndexOfText := 1;
     IndexOfDesc := 2;
     SepChar := '|';
