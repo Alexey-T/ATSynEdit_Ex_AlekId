@@ -515,6 +515,7 @@ begin
   if Application.MainForm.FormStyle in [fsStayOnTop, fsSystemStayOnTop] then
     FormStyle:= Application.MainForm.FormStyle;
 
+  AutoAdjustLayout(lapAutoAdjustForDPI, 96, Screen.PixelsPerInch, Width, Width);
   SetBounds(P.X, P.Y, CompletionOps.FormSizeX, CompletionOps.FormSizeY);
   Show;
 end;
