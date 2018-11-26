@@ -15,6 +15,7 @@ uses
   ATSynEdit_CanvasProc,
   ATSynEdit_Adapters,
   ATSynEdit_Carets,
+  ATSynEdit_Ranges,
   ATStringProc,
   ATStringProc_TextBuffer,
   ATStrings,
@@ -88,6 +89,7 @@ type
     procedure DoCalcParts(var AParts: TATLineParts; ALine, AX, ALen: integer;
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
+    //procedure DoClearRanges_OnlySimple;
     function DoFindToken(APos: TPoint): integer;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
@@ -620,6 +622,26 @@ begin
   end;
 end;
 
+(*
+procedure TATAdapterEControl.DoClearRanges_OnlySimple;
+var
+  Ed: TATSynEdit;
+  R: TATSynRange;
+  i, j: integer;
+begin
+  for j:= 0 to EdList.Count-1 do
+  begin
+    Ed:= TATSynEdit(EdList[j]);
+    for i:= Ed.Fold.Count-1 downto 0 do
+    begin
+      R:= Ed.Fold.Items[i];
+      if R.IsSimple then
+        Ed.Fold.Delete(i);
+    end;
+  end;
+end;
+*)
+
 constructor TATAdapterEControl.Create(AOwner: TComponent);
 begin
   inherited;
@@ -1096,10 +1118,20 @@ begin
   begin
     DoAnalize(Ed, false);
 
-    //dont clear ranges too early (and flicker with empty fold bar)
+    //don't clear ranges too early (avoid flicker with empty fold bar)
     if not EditorRunningCommand
       or IsDynamicHiliteEnabled then
-      UpdateRanges;
+      UpdateRanges
+    else
+    begin
+      {
+      delete colored ranges, it's needed for Bash lexer,
+      $(....) blocks leave artifacts on fast editing.
+      CudaText issue #1710.
+      artifacts visible with CudaText option "show_full_syntax_bg":true.
+      }
+      ListColoredRanges.Clear;
+    end;
   end;
 end;
 
