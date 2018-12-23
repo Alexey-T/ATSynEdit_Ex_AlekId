@@ -8,10 +8,9 @@ unit atsynedit_ex_package;
 interface
 
 uses
-  ATSynEdit_Adapter_EControl, ATSynEdit_Form_Complete, 
-  ATSynEdit_Form_Complete_CSS, ATSynEdit_Form_Complete_HTML, 
-  ATSynEdit_Form_Complete_SynWrite, atsynedit_adapter_litelexer, at__jsonconf, 
-  at__jsonparser;
+  ATSynEdit_Adapter_EControl, ATSynEdit_Form_Complete, ATSynEdit_Form_Complete_CSS, 
+  ATSynEdit_Form_Complete_HTML, ATSynEdit_Form_Complete_SynWrite, ATSynEdit_Adapter_LiteLexer, at__jsonConf, 
+  at__jsonparser, ATSynEdit_Adapter_Simple;
 
 implementation
 
