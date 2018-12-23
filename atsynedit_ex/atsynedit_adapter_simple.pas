@@ -15,7 +15,7 @@ uses
   ATSynEdit_CanvasProc;
 
 type
-  TATAdapterOnGetLineColor = procedure (const AText: UnicodeString;
+  TATAdapterOnGetLineColor = procedure (Editor: TATSynEdit; ALineIndex: integer;
     var AColorFont, AColorBack: TColor) of object;
 
 type
@@ -40,16 +40,14 @@ procedure TATAdapterSimple.OnEditorCalcHilite(Sender: TObject;
   var AColorAfterEol: TColor);
 var
   Ed: TATSynEdit;
-  Str: UnicodeString;
   NColor, NColorBg: TColor;
 begin
   Ed:= Sender as TATSynEdit;
-  Str:= Ed.Strings.Lines[ALineIndex];
 
   NColor:= clNone;
   NColorBg:= clNone;
   if Assigned(FOnGetLineColor) then
-    FOnGetLineColor(Str, NColor, NColorBg);
+    FOnGetLineColor(Ed, ALineIndex, NColor, NColorBg);
 
   if NColor<>clNone then
   begin
