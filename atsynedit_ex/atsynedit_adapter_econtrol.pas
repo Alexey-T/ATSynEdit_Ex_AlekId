@@ -192,7 +192,7 @@ const
     cLineStyleDotted
     );
 
-function ComparePoints(P1, P2: TPoint): integer;
+function ComparePoints(const P1, P2: TPoint): integer; inline;
 begin
   if (P1.X=P2.X) and (P1.Y=P2.Y) then exit(0);
   if (P1.Y>P2.Y) then exit(1);
