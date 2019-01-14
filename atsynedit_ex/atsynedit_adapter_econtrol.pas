@@ -19,7 +19,8 @@ uses
   ATStringProc,
   ATStringProc_TextBuffer,
   ATStrings,
-  ec_SyntAnal;
+  ec_SyntAnal,
+  ec_Lists;
 
 var
   //interval of TimerDuringAnalyze
@@ -469,7 +470,6 @@ procedure TATAdapterEControl.DoCalcParts(var AParts: TATLineParts; ALine, AX,
   ALen: integer; AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
 var
   Ed: TATSynEdit;
-  Strings: TATStrings;
   nColorText: TColor;
   partindex: integer;
   //
@@ -505,8 +505,10 @@ var
   end;
   //
 var
+  //Strings: TATStrings;
+  tokenIndexes: TRangeListIndex;
   tokenStart, tokenEnd, TestPoint: TPoint;
-  startindex, mustOffset: integer;
+  tokenIndexStart, tokenIndexEnd, mustOffset: integer;
   token: TecSyntToken;
   tokenStyle: TecSyntaxFormat;
   part: TATLinePart;
@@ -517,17 +519,23 @@ begin
   FillChar(part{%H-}, SizeOf(part), 0);
 
   Ed:= TATSynEdit(EdList[0]);
-  Strings:= Ed.Strings;
+  //Strings:= Ed.Strings;
   nColorText:= Ed.Colors.TextFont;
 
-  startindex:= DoFindToken(Point(0, ALine));
-  if startindex<0 then
-    startindex:= 0;
+  //tokenIndexStart:= DoFindToken(Point(0, ALine)); //old code
+  tokenIndexes:= AnClient.TagIndexes[ALine];
+  tokenIndexStart:= tokenIndexes.NFrom;
+  tokenIndexEnd:= tokenIndexes.NTo;
+  if tokenIndexStart<0 then
+  begin
+    tokenIndexStart:= 0;
+    tokenIndexEnd:= AnClient.TagCount-1;
+  end;
 
   //debug
-  //Application.MainForm.Caption:= Format('adapter startindex %d', [startindex]);
+  //Application.MainForm.Caption:= Format('adapter startindex %d', [tokenIndexStart]);
 
-  for i:= startindex to AnClient.TagCount-1 do
+  for i:= tokenIndexStart to tokenIndexEnd do
   begin
     token:= AnClient.Tags[i];
     tokenStart:= token.PointStart;
@@ -582,7 +590,7 @@ begin
     end;
   end;
 
-  //application.MainForm.Caption:= 'startindex '+inttostr(startindex)+' count-tokens '+inttostr(count);
+  //application.MainForm.Caption:= 'startindex '+inttostr(tokenIndexStart)+' count-tokens '+inttostr(count);
 
   //add ending missing part
   //(not only if part.Len>0)
@@ -1387,7 +1395,25 @@ begin
   end;
 end;
 
+function TATAdapterEControl.DoFindToken(APos: TPoint): integer;
+var
+  Indexes: TRangeListIndex;
+  i: integer;
+begin
+  Result:= -1;
+  if AnClient.TagCount=0 then exit;
+  Indexes:= AnClient.TagIndexes[APos.Y];
+  if Indexes.NFrom<0 then exit;
 
+  for i:= Indexes.NFrom to Indexes.NTo do
+    with AnClient.Tags[i] do
+      if (ComparePoints(PointStart, APos)<=0) and
+         (ComparePoints(APos, PointEnd)<0) then exit(i);
+end;
+
+(*
+//binary searcher of tokens.
+//now it's not needed because we have AnClient.TagIndexes
 function TATAdapterEControl.DoFindToken(APos: TPoint): integer;
 var
   a, b, m, dif: integer;
@@ -1423,6 +1449,7 @@ begin
     Result:= m-1;
   end;
 end;
+*)
 
 function TATAdapterEControl.GetLexer: TecSyntAnalyzer;
 begin
