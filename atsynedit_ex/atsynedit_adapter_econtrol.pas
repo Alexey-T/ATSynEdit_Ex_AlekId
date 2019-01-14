@@ -1398,14 +1398,17 @@ end;
 function TATAdapterEControl.DoFindToken(APos: TPoint): integer;
 var
   Indexes: TRangeListIndex;
-  i: integer;
+  NCount, i: integer;
 begin
   Result:= -1;
-  if AnClient.TagCount=0 then exit;
+  NCount:= AnClient.TagCount;
+  if NCount=0 then exit;
+
   Indexes:= AnClient.TagIndexes[APos.Y];
   if Indexes.NFrom<0 then exit;
 
   for i:= Indexes.NFrom to Indexes.NTo do
+   if i<NCount then
     with AnClient.Tags[i] do
       if (ComparePoints(PointStart, APos)<=0) and
          (ComparePoints(APos, PointEnd)<0) then exit(i);
