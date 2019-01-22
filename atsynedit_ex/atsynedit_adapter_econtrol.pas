@@ -994,8 +994,8 @@ begin
   begin
     Range:= AnClient.SubLexerRanges[AIndex];
     if Range=nil then exit;
-    AStart:= Buffer.StrToCaret(Range.StartPos);
-    AEnd:= Buffer.StrToCaret(Range.EndPos);
+    AStart:= Range.PointStart;
+    AEnd:= Range.PointEnd;
     if Assigned(Range.Rule) and Assigned(Range.Rule.SyntAnalyzer) then
       ALexerName:= Range.Rule.SyntAnalyzer.LexerName;
   end;
@@ -1327,8 +1327,8 @@ begin
     if Style=nil then Continue;
     if Style.BgColor<>clNone then
       ListColoredRanges.Add(TATRangeColored.Create(
-        Buffer.StrToCaret(R.StartPos),
-        Buffer.StrToCaret(R.EndPos),
+        R.PointStart,
+        R.PointEnd,
         -1,
         -1,
         Style.BgColor,
