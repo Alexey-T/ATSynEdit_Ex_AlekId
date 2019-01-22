@@ -108,14 +108,12 @@ type
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateRangesActiveAll;
-    procedure UpdateSeparators;
     procedure UpdateRangesSublex;
     procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
     procedure UpdateRangesFold;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
     procedure SetLexer(AAnalizer: TecSyntAnalyzer);
-    procedure SetEnabledLineSeparators(AValue: boolean);
     function GetLexerSuportsDynamicHilite: boolean;
     function IsDynamicHiliteEnabled: boolean;
   public
@@ -128,7 +126,6 @@ type
     property Lexer: TecSyntAnalyzer read GetLexer write SetLexer;
     property LexerParsingElapsed: integer read FTimeParseElapsed;
     function LexerAtPos(Pnt: TPoint): TecSyntAnalyzer;
-    property EnabledLineSeparators: boolean read FEnabledLineSeparators write SetEnabledLineSeparators;
     property EnabledSublexerTreeNodes: boolean read FEnabledSublexerTreeNodes write FEnabledSublexerTreeNodes default false;
     procedure DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
     procedure DoAnalyzeFromLine(ALine: integer; AWait: boolean);
@@ -341,14 +338,6 @@ begin
 
     if ok then exit(true);
   end;
-end;
-
-procedure TATAdapterEControl.SetEnabledLineSeparators(AValue: boolean);
-begin
-  if FEnabledLineSeparators=AValue then Exit;
-  FEnabledLineSeparators:= AValue;
-  if Assigned(AnClient) then
-    AnClient.EnabledLineSeparators:= EnabledLineSeparators;
 end;
 
 function TATAdapterEControl.GetTokenColorBG_FromMultiLineTokens(APos: TPoint;
@@ -1072,7 +1061,6 @@ begin
   if Assigned(AAnalizer) then
   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil);
-    AnClient.EnabledLineSeparators:= EnabledLineSeparators;
     UpdateData(true, true);
   end;
 
@@ -1141,9 +1129,6 @@ begin
   DoClearRanges;
   UpdateRangesFold;
   UpdateRangesSublex; //sublexer ranges last
-
-  if EnabledLineSeparators then
-    UpdateSeparators;
 
   UpdateRangesActiveAll;
 end;
@@ -1243,41 +1228,6 @@ begin
     TATSynEdit(EdList[i]).UpdateFoldedFromLinesHidden;
 end;
 
-
-procedure TATAdapterEControl.UpdateSeparators;
-var
-  Ed: TATSynEdit;
-  Break: TecLineBreak;
-  Sep: TATLineSeparator;
-  i, j: integer;
-begin
-  if EdList.Count=0 then Exit;
-  Ed:= TATSynEdit(EdList[0]);
-
-  for i:= 0 to Ed.Strings.Count-1 do
-    Ed.Strings.LinesSeparator[i]:= cLineSepNone;
-
-  if AnClient.LineBreaks.Count>0 then
-  begin
-    Break:= TecLineBreak(AnClient.LineBreaks[0]);
-    for j:= 0 to EdList.Count-1 do
-      TATSynEdit(EdList[j]).Colors.BlockSepLine:= Break.Rule.Style.BgColor;
-
-    for i:= 0 to AnClient.LineBreaks.Count-1 do
-    begin
-      Break:= TecLineBreak(AnClient.LineBreaks[i]);
-
-      Sep:= cLineSepTop; //parser considered top/bottom already
-      //if Break.Rule.LinePos=lbTop then
-      //  Sep:= cLineSepTop
-      //else
-      //  Sep:= cLineSepBottom;
-
-      if Ed.Strings.IsIndexValid(Break.Line) then
-        Ed.Strings.LinesSeparator[Break.Line]:= Sep;
-    end;
-  end;
-end;
 
 procedure TATAdapterEControl.UpdateRangesFold;
 var
