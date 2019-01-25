@@ -83,7 +83,7 @@ type
     FOnLexerChange: TNotifyEvent;
     FOnParseBegin: TNotifyEvent;
     FOnParseDone: TNotifyEvent;
-    procedure DoCheckEditorList;
+    procedure DoCheckEditorList; inline;
     procedure DoFindTokenOverrideStyle(var ATokenStyle: TecSyntaxFormat;
       ATokenIndex, AEditorIndex: integer);
     procedure DoFoldAdd(AX, AY, AY2: integer; AStaple: boolean; const AHint: string);
@@ -269,7 +269,7 @@ end;
 
 { TATAdapterEControl }
 
-procedure TATAdapterEControl.DoCheckEditorList;
+procedure TATAdapterEControl.DoCheckEditorList; inline;
 begin
   if EdList.Count=0 then
     raise Exception.Create('Adapter: Empty editor list');
@@ -280,14 +280,10 @@ procedure TATAdapterEControl.OnEditorCalcHilite(Sender: TObject;
   var AColorAfterEol: TColor);
 var
   Ed: TATSynEdit;
-  Str: atString;
 begin
+  if not Assigned(AnClient) then Exit;
   DoCheckEditorList;
   Ed:= Sender as TATSynEdit;
-  if not Assigned(AnClient) then Exit;
-
-  Str:= Copy(Ed.Strings.Lines[ALineIndex], ACharIndex, ALineLen);
-  ALineLen:= Length(Str);
 
   AColorAfterEol:= clNone;
   DoCalcParts(AParts, ALineIndex, ACharIndex-1, ALineLen,
