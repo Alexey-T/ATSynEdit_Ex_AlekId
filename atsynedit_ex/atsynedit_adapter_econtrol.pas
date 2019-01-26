@@ -355,11 +355,21 @@ begin
       Result:= Token.Style.BgColor;
 end;
 
+
+function _IsPosInColoredRange(const APos: TPoint; ARange: TATRangeColored): boolean; inline;
+begin
+  Result:= IsPosInRange(
+    APos.X, APos.Y,
+    ARange.Pos1.X, ARange.Pos1.Y,
+    ARange.Pos2.X, ARange.Pos2.Y
+    ) = cRelateInside;
+end;
+
 function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
   Rng: TATRangeColored;
-  act: boolean;
+  Allow: boolean;
   i: integer;
 begin
   Result:= ADefColor;
@@ -369,21 +379,15 @@ begin
   begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
 
-    act:= false;
     if Rng.ActiveAlways then
-      act:= true
+      Allow:= true
     else
-      act:=
+      Allow:=
         Rng.Active[AEditorIndex] and
         Assigned(Rng.Rule) and
         (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]);
 
-    if act then
-    if IsPosInRange(
-      APos.X, APos.Y,
-      Rng.Pos1.X, Rng.Pos1.Y,
-      Rng.Pos2.X, Rng.Pos2.Y
-      ) = cRelateInside then
+    if Allow and _IsPosInColoredRange(APos, Rng) then
       Exit(Rng.Color);
   end;
 end;
