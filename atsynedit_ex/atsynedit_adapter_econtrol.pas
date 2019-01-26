@@ -84,14 +84,12 @@ type
     FOnParseBegin: TNotifyEvent;
     FOnParseDone: TNotifyEvent;
     procedure DoCheckEditorList; inline;
-    procedure DoFindTokenOverrideStyle(var ATokenStyle: TecSyntaxFormat;
-      ATokenIndex, AEditorIndex: integer);
     procedure DoFoldAdd(AX, AY, AY2: integer; AStaple: boolean; const AHint: string);
     procedure DoCalcParts(var AParts: TATLineParts; ALine, AX, ALen: integer;
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
-    //procedure DoClearRanges_OnlySimple;
     function DoFindToken(APos: TPoint): integer;
+    function DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
     procedure DoParseBegin;
@@ -374,7 +372,7 @@ var
 begin
   Result:= ADefColor;
 
-  //todo: binary search in ListColoredRanges...
+  //todo? binary search?
   for i:= ListColoredRanges.Count-1 downto 0 do
   begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
@@ -498,7 +496,7 @@ var
   tokenStart, tokenEnd, TestPoint: TPoint;
   startindex, mustOffset: integer;
   token: TecSyntToken;
-  tokenStyle: TecSyntaxFormat;
+  tokenStyle, tokenStyle2: TecSyntaxFormat;
   part: TATLinePart;
   nColor: TColor;
   i: integer;
@@ -546,7 +544,9 @@ begin
     part.ColorBG:= GetTokenColorBG_FromColoredRanges(token.PointStart, AColorBG, AEditorIndex);
 
     tokenStyle:= token.Style;
-    DoFindTokenOverrideStyle(tokenStyle, i, AEditorIndex);
+    tokenStyle2:= DoFindTokenOverrideStyle(i, AEditorIndex);
+    if tokenStyle2<>nil then
+      tokenStyle:= tokenStyle2;
     if tokenStyle<>nil then
       ApplyPartStyleFromEcontrolStyle(part, tokenStyle);
 
@@ -1433,13 +1433,13 @@ begin
 end;
 
 
-procedure TATAdapterEControl.DoFindTokenOverrideStyle(var ATokenStyle: TecSyntaxFormat;
-  ATokenIndex, AEditorIndex: integer);
+function TATAdapterEControl.DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
 var
   Rng: TATRangeColored;
   i: integer;
 begin
-  //todo: binary search
+  Result:= nil;
+  //todo? binary search?
   for i:= 0 to ListColoredRanges.Count-1 do
   begin
     Rng:= TATRangeColored(ListColoredRanges[i]);
@@ -1447,10 +1447,7 @@ begin
       if Rng.Rule<>nil then
         if Rng.Rule.DynHighlight=dhBound then
           if (Rng.Token1=ATokenIndex) or (Rng.Token2=ATokenIndex) then
-          begin
-            ATokenStyle:= Rng.Rule.Style;
-            Exit
-          end;
+            exit(Rng.Rule.Style);
   end;
 end;
 
