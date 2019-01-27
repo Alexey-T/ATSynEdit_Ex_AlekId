@@ -88,7 +88,7 @@ type
     procedure DoCalcParts(var AParts: TATLineParts; ALine, AX, ALen: integer;
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
-    function DoFindToken(APos: TPoint): integer;
+    function DoFindToken(APos: TPoint): integer; inline;
     function DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
@@ -1339,40 +1339,9 @@ begin
 end;
 
 
-function TATAdapterEControl.DoFindToken(APos: TPoint): integer;
-var
-  a, b, m, dif: integer;
+function TATAdapterEControl.DoFindToken(APos: TPoint): integer; inline;
 begin
-  Result:= -1;
-
-  a:= 0;
-  b:= AnClient.TagCount-1;
-  if b<0 then Exit;
-
-  repeat
-    dif:= ComparePoints(AnClient.Tags[a].PointStart, APos);
-    if dif=0 then Exit(a);
-
-    //middle, which is near b if not exact middle
-    m:= (a+b+1) div 2;
-
-    dif:= ComparePoints(AnClient.Tags[m].PointStart, APos);
-    if dif=0 then Exit(m);
-
-    if Abs(a-b)<=1 then Break;
-    if dif>0 then b:= m else a:= m;
-  until false;
-
-  if m=0 then
-    Result:= 0
-  else
-  begin
-    Result:= m;
-    with AnClient.Tags[Result] do
-      if (ComparePoints(PointStart, APos)<=0) and
-         (ComparePoints(APos, PointEnd)<0) then exit;
-    Result:= m-1;
-  end;
+  Result:= AnClient.PriorTokenAt(AnClient.Buffer.CaretToStr(APos));
 end;
 
 function TATAdapterEControl.GetLexer: TecSyntAnalyzer;
