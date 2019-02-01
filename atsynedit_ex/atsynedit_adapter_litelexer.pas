@@ -380,7 +380,7 @@ begin
           Inc(AParts[NParts-1].Len);
         end;
         AParts[NParts-1].ColorBG:= clNone; //Random($fffff);
-        AParts[NParts-1].ColorFont:= clBlack;
+        AParts[NParts-1].ColorFont:= Ed.Colors.TextFont;
       end;
 
       Inc(NPos);
