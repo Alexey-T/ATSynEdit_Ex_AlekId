@@ -142,7 +142,6 @@ type
     //support for syntax-tree
     property TreeBusy: boolean read FBusyTreeUpdate;
     procedure TreeFill(ATree: TTreeView);
-    procedure TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
     procedure TreeGetPositionOfRange_EC(R: TecTextRange; out APosBegin, APosEnd: TPoint);
     function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 
@@ -168,6 +167,7 @@ type
   end;
 
 procedure ApplyPartStyleFromEcontrolStyle(var part: TATLinePart; st: TecSyntaxFormat);
+procedure CodetreeSelectItemForPosition(ATree: TTreeView; APos: TPoint);
 
 
 implementation
@@ -1001,7 +1001,7 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.TreeShowItemForCaret(ATree: TTreeView; APos: TPoint);
+procedure CodetreeSelectItemForPosition(ATree: TTreeView; APos: TPoint);
 var
   Node, NodeResult: TTreeNode;
   Range: TATRangeInCodeTree;
