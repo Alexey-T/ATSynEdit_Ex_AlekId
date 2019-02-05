@@ -12,7 +12,6 @@ uses
   Classes, SysUtils, Graphics, ExtCtrls, ComCtrls,
   Forms, Dialogs,
   ATSynEdit,
-  ATSynEdit_Timer,
   ATSynEdit_CanvasProc,
   ATSynEdit_Adapters,
   ATSynEdit_Carets,
@@ -71,7 +70,7 @@ type
     EdList: TList;
     Buffer: TATStringBuffer;
     ListColoredRanges: TList;
-    TimerDuringAnalyze: TATSafeTimer;
+    TimerDuringAnalyze: TTimer;
     CurrentIdleInterval: integer;
     FEnabledLineSeparators: boolean;
     FEnabledSublexerTreeNodes: boolean;
@@ -643,7 +642,7 @@ begin
   FEnabledLineSeparators:= false;
   FEnabledSublexerTreeNodes:= false;
 
-  TimerDuringAnalyze:= TATSafeTimer.Create(Self);
+  TimerDuringAnalyze:= TTimer.Create(Self);
   TimerDuringAnalyze.Enabled:= false;
   TimerDuringAnalyze.Interval:= cAdapterTimerDuringAnalyzeInterval;
   TimerDuringAnalyze.OnTimer:= @TimerDuringAnalyzeTimer;
