@@ -1002,12 +1002,13 @@ end;
 
 procedure CodetreeSelectItemForPosition(ATree: TTreeView; APos: TPoint);
 var
-  Node, NodeResult: TTreeNode;
+  Node, NodeNear, NodeResult: TTreeNode;
   Range: TATRangeInCodeTree;
   Pos1, Pos2: TPoint;
   i: integer;
 begin
   NodeResult:= nil;
+  NodeNear:= nil;
 
   //ranges are sorted, so we find _last_ range which
   //includes APos
@@ -1021,6 +1022,10 @@ begin
         Pos1:= Range.PosBegin;
         Pos2:= Range.PosEnd;
 
+        if NodeNear=nil then
+          if (Pos1.Y>=0) and IsPosSorted(Pos1.X, Pos1.Y, APos.X, APos.Y, true) then
+            NodeNear:= Node;
+
         if IsPosInRange(
           APos.X, APos.Y,
           Pos1.X, Pos1.Y,
@@ -1032,6 +1037,10 @@ begin
         end;
       end;
   end;
+
+  if NodeResult=nil then
+    if NodeNear<>nil then
+      NodeResult:= NodeNear;
 
   if Assigned(NodeResult) then
   begin
