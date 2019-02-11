@@ -1194,7 +1194,10 @@ begin
   end
   else
   begin
-    UpdateEditors(false, true); //some portion is parsed already
+    //UpdateEditors(false, true);
+      //some portion is parsed already
+      //ARepaint=false, otherwise we get 2 unneeded repaints per each edit
+
     TimerDuringAnalyze.Enabled:= true;
   end;
 end;
