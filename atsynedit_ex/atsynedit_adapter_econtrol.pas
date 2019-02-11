@@ -1194,7 +1194,7 @@ begin
   end
   else
   begin
-    UpdateEditors(true, true); //some portion is parsed already
+    UpdateEditors(false, true); //some portion is parsed already
     TimerDuringAnalyze.Enabled:= true;
   end;
 end;
