@@ -134,8 +134,8 @@ type
       ATokenString, ATokenStyle: string);
     procedure GetTokenAtPos(APos: TPoint; out APntFrom, APntTo: TPoint; out
       ATokenString, ATokenStyle: string);
-    function GetTokenString(token: TecSyntToken): string;
-    procedure GetTokenProps(token: TecSyntToken; out APntFrom, APntTo: TPoint;
+    function GetTokenString(const token: TecSyntToken): string;
+    procedure GetTokenProps(const token: TecSyntToken; out APntFrom, APntTo: TPoint;
       out ATokenString, ATokenStyle: string);
 
     //support for syntax-tree
@@ -724,7 +724,7 @@ end;
 
 
 
-function TATAdapterEControl.GetTokenString(token: TecSyntToken): string;
+function TATAdapterEControl.GetTokenString(const token: TecSyntToken): string;
 begin
   if Assigned(Buffer) then
     Result:= Utf8Encode(Buffer.SubString(token.Range.StartPos+1, token.Range.EndPos-token.Range.StartPos))
@@ -732,7 +732,7 @@ begin
     Result:= '';
 end;
 
-procedure TATAdapterEControl.GetTokenProps(token: TecSyntToken;
+procedure TATAdapterEControl.GetTokenProps(const token: TecSyntToken;
   out APntFrom, APntTo: TPoint; out ATokenString, ATokenStyle: string);
 begin
   APntFrom:= token.Range.PointStart;
