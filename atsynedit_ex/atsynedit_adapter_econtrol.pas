@@ -94,7 +94,7 @@ type
     procedure DoParseBegin;
     procedure DoParseDone;
     function GetIdleInterval: integer;
-    function GetRangeParent(R: TecTextRange): TecTextRange;
+    function GetRangeParent(const R: TecTextRange): TecTextRange;
     function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: TPoint; ACond: TATRangeCond): boolean;
     function GetTokenColorBG_FromColoredRanges(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
@@ -141,7 +141,7 @@ type
     //support for syntax-tree
     property TreeBusy: boolean read FBusyTreeUpdate;
     procedure TreeFill(ATree: TTreeView);
-    procedure TreeGetPositionOfRange_EC(R: TecTextRange; out APosBegin, APosEnd: TPoint);
+    procedure TreeGetPositionOfRange_EC(const R: TecTextRange; out APosBegin, APosEnd: TPoint);
     function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 
     //sublexers
@@ -346,8 +346,8 @@ begin
   Token:= AnClient.Tags[n];
   if IsPosInRange(
     APos.X, APos.Y,
-    Token.PointStart.X, Token.PointStart.Y,
-    Token.PointEnd.X, Token.PointEnd.Y) = cRelateInside then
+    Token.Range.PointStart.X, Token.Range.PointStart.Y,
+    Token.Range.PointEnd.X, Token.Range.PointEnd.Y) = cRelateInside then
     if Token.Style<>nil then
       Result:= Token.Style.BgColor;
 end;
@@ -517,8 +517,8 @@ begin
   for i:= startindex to AnClient.TagCount-1 do
   begin
     token:= AnClient.Tags[i];
-    tokenStart:= token.PointStart;
-    tokenEnd:= token.PointEnd;
+    tokenStart:= token.Range.PointStart;
+    tokenEnd:= token.Range.PointEnd;
 
     Dec(tokenStart.x, AX);
     Dec(tokenEnd.x, AX);
@@ -540,7 +540,7 @@ begin
       part.Len:= tokenEnd.X-part.Offset;
 
     part.ColorFont:= AColorFont;
-    part.ColorBG:= GetTokenColorBG_FromColoredRanges(token.PointStart, AColorBG, AEditorIndex);
+    part.ColorBG:= GetTokenColorBG_FromColoredRanges(token.Range.PointStart, AColorBG, AEditorIndex);
 
     tokenStyle:= token.Style;
     tokenStyle2:= DoFindTokenOverrideStyle(i, AEditorIndex);
@@ -727,7 +727,7 @@ end;
 function TATAdapterEControl.GetTokenString(token: TecSyntToken): string;
 begin
   if Assigned(Buffer) then
-    Result:= Utf8Encode(Buffer.SubString(token.StartPos+1, token.EndPos-token.StartPos))
+    Result:= Utf8Encode(Buffer.SubString(token.Range.StartPos+1, token.Range.EndPos-token.Range.StartPos))
   else
     Result:= '';
 end;
@@ -735,8 +735,8 @@ end;
 procedure TATAdapterEControl.GetTokenProps(token: TecSyntToken;
   out APntFrom, APntTo: TPoint; out ATokenString, ATokenStyle: string);
 begin
-  APntFrom:= token.PointStart;
-  APntTo:= token.PointEnd;
+  APntFrom:= token.Range.PointStart;
+  APntTo:= token.Range.PointEnd;
   ATokenString:= GetTokenString(token);
   if Assigned(token.Style) then
     ATokenStyle:= token.Style.DisplayName
@@ -779,7 +779,7 @@ begin
 end;
 
 
-function TATAdapterEControl.GetRangeParent(R: TecTextRange): TecTextRange;
+function TATAdapterEControl.GetRangeParent(const R: TecTextRange): TecTextRange;
 //cannot use R.Parent!
 var
   RTest: TecTextRange;
@@ -909,12 +909,12 @@ begin
       RangeNew:= TATRangeInCodeTree.Create;
 
       if R.StartIdx>=0 then
-        RangeNew.PosBegin:= AnClient.Tags[R.StartIdx].PointStart
+        RangeNew.PosBegin:= AnClient.Tags[R.StartIdx].Range.PointStart
       else
         RangeNew.PosBegin:= Point(-1, -1);
 
       if R.EndIdx>=0 then
-        RangeNew.PosEnd:= AnClient.Tags[R.EndIdx].PointEnd
+        RangeNew.PosEnd:= AnClient.Tags[R.EndIdx].Range.PointEnd
       else
         RangeNew.PosEnd:= Point(-1, -1);
 
@@ -928,7 +928,7 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.TreeGetPositionOfRange_EC(R: TecTextRange;
+procedure TATAdapterEControl.TreeGetPositionOfRange_EC(const R: TecTextRange;
   out APosBegin, APosEnd: TPoint);
 begin
   APosBegin:= Point(-1, -1);
@@ -937,10 +937,10 @@ begin
   if AnClient=nil then exit;
 
   if R.StartIdx>=0 then
-    APosBegin:= AnClient.Tags[R.StartIdx].PointStart;
+    APosBegin:= AnClient.Tags[R.StartIdx].Range.PointStart;
 
   if R.EndIdx>=0 then
-    APosEnd:=  AnClient.Tags[R.EndIdx].PointEnd;
+    APosEnd:=  AnClient.Tags[R.EndIdx].Range.PointEnd;
 end;
 
 function TATAdapterEControl.TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
@@ -992,9 +992,9 @@ begin
   if Result then
   begin
     Range:= AnClient.SubLexerRanges[AIndex];
-    if Range=nil then exit;
-    AStart:= Range.PointStart;
-    AEnd:= Range.PointEnd;
+    if Range.Range.StartPos<0 then exit;
+    AStart:= Range.Range.PointStart;
+    AEnd:= Range.Range.PointEnd;
     if Assigned(Range.Rule) and Assigned(Range.Rule.SyntAnalyzer) then
       ALexerName:= Range.Rule.SyntAnalyzer.LexerName;
   end;
@@ -1275,8 +1275,8 @@ begin
 
     tokenStart:= AnClient.Tags[R.StartIdx];
     tokenEnd:= AnClient.Tags[R.EndIdx];
-    Pnt1:= tokenStart.PointStart;
-    Pnt2:= tokenEnd.PointEnd;
+    Pnt1:= tokenStart.Range.PointStart;
+    Pnt2:= tokenEnd.Range.PointEnd;
     if Pnt1.Y<0 then Continue;
     if Pnt2.Y<0 then Continue;
 
@@ -1331,15 +1331,15 @@ begin
 
     R:= AnClient.SubLexerRanges[i];
     if R.Rule=nil then Continue;
-    if R.StartPos<0 then Continue;
-    if R.EndPos<0 then Continue;
+    if R.Range.StartPos<0 then Continue;
+    if R.Range.EndPos<0 then Continue;
 
     Style:= R.Rule.Style;
     if Style=nil then Continue;
     if Style.BgColor<>clNone then
       ListColoredRanges.Add(TATRangeColored.Create(
-        R.PointStart,
-        R.PointEnd,
+        R.Range.PointStart,
+        R.Range.PointEnd,
         -1,
         -1,
         Style.BgColor,
