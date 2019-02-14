@@ -77,6 +77,7 @@ type
     TimerDuringAnalyze: TTimer;
     CurrentIdleInterval: integer;
     FRangesColored: TATSortedRanges;
+    FRangesSublexer: TATSortedRanges;
     FEnabledLineSeparators: boolean;
     FEnabledSublexerTreeNodes: boolean;
     FBusyTreeUpdate: boolean;
@@ -397,6 +398,14 @@ begin
     if Allow and Rng.IsPosInside(APos) then
       Exit(Rng.Color);
   end;
+
+  for i:= FRangesSublexer.Count-1 downto 0 do
+  begin
+    //sublexer ranges are always active
+    Rng:= FRangesSublexer[i];
+    if Rng.IsPosInside(APos) then
+      Exit(Rng.Color);
+  end;
 end;
 
 procedure TATAdapterEControl.UpdateRangesActive(AEdit: TATSynEdit);
@@ -458,8 +467,6 @@ begin
             RngOut.Active[AEdit.EditorIndex]:= false;
     end;
   end;
-
-  //ShowMessage('ColoredRanges: '+IntToStr(FRangesColored.Count));
 end;
 
 
@@ -613,6 +620,7 @@ var
   Ed: TATSynEdit;
 begin
   FRangesColored.Clear;
+  FRangesSublexer.Clear;
 
   for j:= 0 to EdList.Count-1 do
   begin
@@ -650,6 +658,7 @@ begin
   AnClient:= nil;
   Buffer:= TATStringBuffer.Create;
   FRangesColored:= TATSortedRanges.Create;
+  FRangesSublexer:= TATSortedRanges.Create;
   FEnabledLineSeparators:= false;
   FEnabledSublexerTreeNodes:= false;
 
@@ -666,6 +675,7 @@ begin
   if Assigned(AnClient) then
     FreeAndNil(AnClient);
 
+  FreeAndNil(FRangesSublexer);
   FreeAndNil(FRangesColored);
 
   FreeAndNil(Buffer);
@@ -1135,6 +1145,7 @@ begin
       artifacts visible with CudaText option "show_full_syntax_bg":true.
       }
       FRangesColored.Clear;
+      FRangesSublexer.Clear;
     end;
   end;
 end;
@@ -1332,7 +1343,7 @@ procedure TATAdapterEControl.UpdateRangesSublex;
 var
   R: TecSubLexerRange;
   Style: TecSyntaxFormat;
-  ColoredRange: TATSortedRange;
+  Range: TATSortedRange;
   i: integer;
 begin
   for i:= 0 to AnClient.SubLexerRangeCount-1 do
@@ -1348,7 +1359,7 @@ begin
     if Style=nil then Continue;
     if Style.BgColor<>clNone then
     begin
-      ColoredRange.Init(
+      Range.Init(
         R.Range.PointStart,
         R.Range.PointEnd,
         -1,
@@ -1357,7 +1368,7 @@ begin
         nil,
         true
         );
-      FRangesColored.Add(ColoredRange);
+      FRangesSublexer.Add(Range);
     end;
   end;
 end;
