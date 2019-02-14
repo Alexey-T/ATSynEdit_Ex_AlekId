@@ -77,6 +77,7 @@ type
     TimerDuringAnalyze: TTimer;
     CurrentIdleInterval: integer;
     FRangesColored: TATSortedRanges;
+    FRangesColoredBounds: TATSortedRanges;
     FRangesSublexer: TATSortedRanges;
     FEnabledLineSeparators: boolean;
     FEnabledSublexerTreeNodes: boolean;
@@ -111,6 +112,7 @@ type
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateRangesActiveAll;
+    procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
     procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
     procedure UpdateRangesFold;
@@ -408,17 +410,15 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.UpdateRangesActive(AEdit: TATSynEdit);
+procedure TATAdapterEControl.UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
 var
-  Rng, RngOut: TATSortedRange;
-  i, j: integer;
+  Rng: TATSortedRange;
   act: boolean;
+  i: integer;
 begin
-  if not IsDynamicHiliteEnabled then Exit;
-
-  for i:= 0 to FRangesColored.Count-1 do
+  for i:= 0 to List.Count-1 do
   begin
-    Rng:= FRangesColored[i];
+    Rng:= List[i];
     if Rng.ActiveAlways then
       act:= true
     else
@@ -442,9 +442,23 @@ begin
           act:= false;
       end;
     end;
-    Rng.Active[AEdit.EditorIndex]:= act;
-    FRangesColored[i]:= Rng;
+    if Rng.Active[AEdit.EditorIndex]<>act then
+    begin
+      Rng.Active[AEdit.EditorIndex]:= act;
+      List[i]:= Rng;
+    end;
   end;
+end;
+
+procedure TATAdapterEControl.UpdateRangesActive(AEdit: TATSynEdit);
+var
+  Rng, RngOut: TATSortedRange;
+  i, j: integer;
+begin
+  if not IsDynamicHiliteEnabled then Exit;
+
+  UpdateRangesActive_Ex(AEdit, FRangesColored);
+  UpdateRangesActive_Ex(AEdit, FRangesColoredBounds);
 
   //deactivate ranges by DynSelectMin
   //cycle back, to see first nested ranges
@@ -620,6 +634,7 @@ var
   Ed: TATSynEdit;
 begin
   FRangesColored.Clear;
+  FRangesColoredBounds.Clear;
   FRangesSublexer.Clear;
 
   for j:= 0 to EdList.Count-1 do
@@ -658,6 +673,7 @@ begin
   AnClient:= nil;
   Buffer:= TATStringBuffer.Create;
   FRangesColored:= TATSortedRanges.Create;
+  FRangesColoredBounds:= TATSortedRanges.Create;
   FRangesSublexer:= TATSortedRanges.Create;
   FEnabledLineSeparators:= false;
   FEnabledSublexerTreeNodes:= false;
@@ -676,6 +692,7 @@ begin
     FreeAndNil(AnClient);
 
   FreeAndNil(FRangesSublexer);
+  FreeAndNil(FRangesColoredBounds);
   FreeAndNil(FRangesColored);
 
   FreeAndNil(Buffer);
@@ -1145,6 +1162,7 @@ begin
       artifacts visible with CudaText option "show_full_syntax_bg":true.
       }
       FRangesColored.Clear;
+      FRangesColoredBounds.Clear;
       FRangesSublexer.Clear;
     end;
   end;
@@ -1330,7 +1348,11 @@ begin
             R.Rule,
             (R.Rule.HighlightPos=cpAny)
             );
-          FRangesColored.Add(ColoredRange);
+
+          if R.Rule.DynHighlight=dhBound then
+            FRangesColoredBounds.Add(ColoredRange)
+          else
+            FRangesColored.Add(ColoredRange);
         end;
     end;
   end;
@@ -1444,12 +1466,12 @@ var
 begin
   Result:= nil;
   //todo? binary search?
-  for i:= 0 to FRangesColored.Count-1 do
+  for i:= 0 to FRangesColoredBounds.Count-1 do
   begin
-    Rng:= FRangesColored[i];
+    Rng:= FRangesColoredBounds[i];
     if Rng.Active[AEditorIndex] then
-      if Rng.Rule<>nil then
-        if Rng.Rule.DynHighlight=dhBound then
+      //if Rng.Rule<>nil then
+        //if Rng.Rule.DynHighlight=dhBound then //all items in FRangesColredBounds have dhBound
           if (Rng.Token1=ATokenIndex) or (Rng.Token2=ATokenIndex) then
             exit(Rng.Rule.Style);
   end;
