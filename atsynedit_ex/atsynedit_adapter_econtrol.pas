@@ -5,6 +5,7 @@ License: MPL 2.0 or LGPL
 unit ATSynEdit_Adapter_EControl;
 
 {$mode objfpc}{$H+}
+{$ModeSwitch advancedrecords}
 
 interface
 
@@ -16,6 +17,7 @@ uses
   ATSynEdit_Adapters,
   ATSynEdit_Carets,
   ATSynEdit_Ranges,
+  ATSynEdit_FGL,
   ATStringProc,
   ATStringProc_TextBuffer,
   ATStrings,
@@ -43,20 +45,23 @@ type
 type
   { TATRangeColored }
 
-  TATRangeColored = class
-  public
+  TATRangeColored = record
     Pos1, Pos2: TPoint;
     Token1, Token2: integer;
     Color: TColor;
     Rule: TecTagBlockCondition;
     ActiveAlways: boolean;
     Active: array[0..Pred(cMaxStringsClients)] of boolean;
-    constructor Create(
+    class operator =(const a, b: TATRangeColored): boolean;
+    procedure Init(
       APos1, APos2: TPoint;
       AToken1, AToken2: integer;
       AColor: TColor; ARule: TecTagBlockCondition;
       AActiveAlways: boolean);
+    function IsPosInside(const APos: TPoint): boolean;
   end;
+
+  TATRangeColoredList = specialize TFPGList<TATRangeColored>;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
 
@@ -69,7 +74,7 @@ type
   private
     EdList: TList;
     Buffer: TATStringBuffer;
-    ListColoredRanges: TList;
+    ListColoredRanges: TATRangeColoredList;
     TimerDuringAnalyze: TTimer;
     CurrentIdleInterval: integer;
     FEnabledLineSeparators: boolean;
@@ -247,7 +252,12 @@ end;
 
 { TATRangeColored }
 
-constructor TATRangeColored.Create(APos1, APos2: TPoint; AToken1,
+class operator TATRangeColored.=(const a, b: TATRangeColored): boolean;
+begin
+  Result:= false;
+end;
+
+procedure TATRangeColored.Init(APos1, APos2: TPoint; AToken1,
   AToken2: integer; AColor: TColor; ARule: TecTagBlockCondition;
   AActiveAlways: boolean);
 var
@@ -262,6 +272,15 @@ begin
   ActiveAlways:= AActiveAlways;
   for i:= Low(Active) to High(Active) do
     Active[i]:= false;
+end;
+
+function TATRangeColored.IsPosInside(const APos: TPoint): boolean;
+begin
+  Result:= IsPosInRange(
+    APos.X, APos.Y,
+    Pos1.X, Pos1.Y,
+    Pos2.X, Pos2.Y
+    ) = cRelateInside;
 end;
 
 { TATAdapterEControl }
@@ -353,15 +372,6 @@ begin
 end;
 
 
-function _IsPosInColoredRange(const APos: TPoint; ARange: TATRangeColored): boolean; inline;
-begin
-  Result:= IsPosInRange(
-    APos.X, APos.Y,
-    ARange.Pos1.X, ARange.Pos1.Y,
-    ARange.Pos2.X, ARange.Pos2.Y
-    ) = cRelateInside;
-end;
-
 function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
@@ -374,7 +384,7 @@ begin
   //todo? binary search?
   for i:= ListColoredRanges.Count-1 downto 0 do
   begin
-    Rng:= TATRangeColored(ListColoredRanges[i]);
+    Rng:= ListColoredRanges[i];
 
     if Rng.ActiveAlways then
       Allow:= true
@@ -384,7 +394,7 @@ begin
         Assigned(Rng.Rule) and
         (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]);
 
-    if Allow and _IsPosInColoredRange(APos, Rng) then
+    if Allow and Rng.IsPosInside(APos) then
       Exit(Rng.Color);
   end;
 end;
@@ -399,7 +409,7 @@ begin
 
   for i:= 0 to ListColoredRanges.Count-1 do
   begin
-    Rng:= TATRangeColored(ListColoredRanges[i]);
+    Rng:= ListColoredRanges[i];
     if Rng.ActiveAlways then
       act:= true
     else
@@ -431,7 +441,7 @@ begin
 
   for i:= ListColoredRanges.Count-1 downto 0 do
   begin
-    Rng:= TATRangeColored(ListColoredRanges[i]);
+    Rng:= ListColoredRanges[i];
     if not Rng.Active[AEdit.EditorIndex] then Continue;
     if Rng.Rule=nil then Continue;
     if not Rng.Rule.DynSelectMin then Continue;
@@ -439,7 +449,7 @@ begin
     //take prev ranges which contain this range
     for j:= i-1 downto 0 do
     begin
-      RngOut:= TATRangeColored(ListColoredRanges[j]);
+      RngOut:= ListColoredRanges[j];
       if RngOut.Rule=Rng.Rule then
         if RngOut.Active[AEdit.EditorIndex] then
           if (ComparePoints(RngOut.Pos1, Rng.Pos1)<=0) and
@@ -638,7 +648,7 @@ begin
   EdList:= TList.Create;
   AnClient:= nil;
   Buffer:= TATStringBuffer.Create;
-  ListColoredRanges:= TList.Create;
+  ListColoredRanges:= TATRangeColoredList.Create;
   FEnabledLineSeparators:= false;
   FEnabledSublexerTreeNodes:= false;
 
@@ -649,16 +659,12 @@ begin
 end;
 
 destructor TATAdapterEControl.Destroy;
-var
-  i: integer;
 begin
   AddEditor(nil);
 
   if Assigned(AnClient) then
     FreeAndNil(AnClient);
 
-  for i:= ListColoredRanges.Count-1 downto 0 do
-    TObject(ListColoredRanges[i]).Free;
   FreeAndNil(ListColoredRanges);
 
   FreeAndNil(Buffer);
@@ -1247,6 +1253,7 @@ var
   Style: TecSyntaxFormat;
   SHint: string;
   tokenStart, tokenEnd: TecSyntToken;
+  ColoredRange: TATRangeColored;
   i: integer;
 begin
   if not Assigned(AnClient) then Exit;
@@ -1302,7 +1309,7 @@ begin
               //+1 to make range longer, to hilite line to screen end
           end;
 
-          ListColoredRanges.Add(TATRangeColored.Create(
+          ColoredRange.Init(
             Pnt1,
             Pnt2,
             R.StartIdx,
@@ -1310,7 +1317,8 @@ begin
             Style.BgColor,
             R.Rule,
             (R.Rule.HighlightPos=cpAny)
-            ));
+            );
+          ListColoredRanges.Add(ColoredRange);
         end;
     end;
   end;
@@ -1323,6 +1331,7 @@ procedure TATAdapterEControl.UpdateRangesSublex;
 var
   R: TecSubLexerRange;
   Style: TecSyntaxFormat;
+  ColoredRange: TATRangeColored;
   i: integer;
 begin
   for i:= 0 to AnClient.SubLexerRangeCount-1 do
@@ -1337,7 +1346,8 @@ begin
     Style:= R.Rule.Style;
     if Style=nil then Continue;
     if Style.BgColor<>clNone then
-      ListColoredRanges.Add(TATRangeColored.Create(
+    begin
+      ColoredRange.Init(
         R.Range.PointStart,
         R.Range.PointEnd,
         -1,
@@ -1345,7 +1355,9 @@ begin
         Style.BgColor,
         nil,
         true
-        ));
+        );
+      ListColoredRanges.Add(ColoredRange);
+    end;
   end;
 end;
 
@@ -1422,7 +1434,7 @@ begin
   //todo? binary search?
   for i:= 0 to ListColoredRanges.Count-1 do
   begin
-    Rng:= TATRangeColored(ListColoredRanges[i]);
+    Rng:= ListColoredRanges[i];
     if Rng.Active[AEditorIndex] then
       if Rng.Rule<>nil then
         if Rng.Rule.DynHighlight=dhBound then
