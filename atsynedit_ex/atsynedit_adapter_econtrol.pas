@@ -43,16 +43,16 @@ type
   end;
 
 type
-  { TATRangeColored }
+  { TATSortedRange }
 
-  TATRangeColored = record
+  TATSortedRange = record
     Pos1, Pos2: TPoint;
     Token1, Token2: integer;
     Color: TColor;
     Rule: TecTagBlockCondition;
     ActiveAlways: boolean;
     Active: array[0..Pred(cMaxStringsClients)] of boolean;
-    class operator =(const a, b: TATRangeColored): boolean;
+    class operator =(const a, b: TATSortedRange): boolean;
     procedure Init(
       APos1, APos2: TPoint;
       AToken1, AToken2: integer;
@@ -61,7 +61,7 @@ type
     function IsPosInside(const APos: TPoint): boolean;
   end;
 
-  TATRangeColoredList = specialize TFPGList<TATRangeColored>;
+  TATSortedRanges = specialize TFPGList<TATSortedRange>;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
 
@@ -74,9 +74,9 @@ type
   private
     EdList: TList;
     Buffer: TATStringBuffer;
-    ListColoredRanges: TATRangeColoredList;
     TimerDuringAnalyze: TTimer;
     CurrentIdleInterval: integer;
+    FRangesColored: TATSortedRanges;
     FEnabledLineSeparators: boolean;
     FEnabledSublexerTreeNodes: boolean;
     FBusyTreeUpdate: boolean;
@@ -250,14 +250,14 @@ begin
   PosEnd:= Src.PosEnd;
 end;
 
-{ TATRangeColored }
+{ TATSortedRange }
 
-class operator TATRangeColored.=(const a, b: TATRangeColored): boolean;
+class operator TATSortedRange.=(const a, b: TATSortedRange): boolean;
 begin
   Result:= false;
 end;
 
-procedure TATRangeColored.Init(APos1, APos2: TPoint; AToken1,
+procedure TATSortedRange.Init(APos1, APos2: TPoint; AToken1,
   AToken2: integer; AColor: TColor; ARule: TecTagBlockCondition;
   AActiveAlways: boolean);
 var
@@ -274,7 +274,7 @@ begin
     Active[i]:= false;
 end;
 
-function TATRangeColored.IsPosInside(const APos: TPoint): boolean;
+function TATSortedRange.IsPosInside(const APos: TPoint): boolean;
 begin
   Result:= IsPosInRange(
     APos.X, APos.Y,
@@ -375,16 +375,16 @@ end;
 function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
-  Rng: TATRangeColored;
+  Rng: TATSortedRange;
   Allow: boolean;
   i: integer;
 begin
   Result:= ADefColor;
 
   //todo? binary search?
-  for i:= ListColoredRanges.Count-1 downto 0 do
+  for i:= FRangesColored.Count-1 downto 0 do
   begin
-    Rng:= ListColoredRanges[i];
+    Rng:= FRangesColored[i];
 
     if Rng.ActiveAlways then
       Allow:= true
@@ -401,15 +401,15 @@ end;
 
 procedure TATAdapterEControl.UpdateRangesActive(AEdit: TATSynEdit);
 var
-  Rng, RngOut: TATRangeColored;
+  Rng, RngOut: TATSortedRange;
   i, j: integer;
   act: boolean;
 begin
   if not IsDynamicHiliteEnabled then Exit;
 
-  for i:= 0 to ListColoredRanges.Count-1 do
+  for i:= 0 to FRangesColored.Count-1 do
   begin
-    Rng:= ListColoredRanges[i];
+    Rng:= FRangesColored[i];
     if Rng.ActiveAlways then
       act:= true
     else
@@ -434,15 +434,15 @@ begin
       end;
     end;
     Rng.Active[AEdit.EditorIndex]:= act;
-    ListColoredRanges[i]:= Rng;
+    FRangesColored[i]:= Rng;
   end;
 
   //deactivate ranges by DynSelectMin
   //cycle back, to see first nested ranges
 
-  for i:= ListColoredRanges.Count-1 downto 0 do
+  for i:= FRangesColored.Count-1 downto 0 do
   begin
-    Rng:= ListColoredRanges[i];
+    Rng:= FRangesColored[i];
     if not Rng.Active[AEdit.EditorIndex] then Continue;
     if Rng.Rule=nil then Continue;
     if not Rng.Rule.DynSelectMin then Continue;
@@ -450,7 +450,7 @@ begin
     //take prev ranges which contain this range
     for j:= i-1 downto 0 do
     begin
-      RngOut:= ListColoredRanges[j];
+      RngOut:= FRangesColored[j];
       if RngOut.Rule=Rng.Rule then
         if RngOut.Active[AEdit.EditorIndex] then
           if (ComparePoints(RngOut.Pos1, Rng.Pos1)<=0) and
@@ -459,7 +459,7 @@ begin
     end;
   end;
 
-  //ShowMessage('ColoredRanges: '+IntToStr(ListColoredRanges.Count));
+  //ShowMessage('ColoredRanges: '+IntToStr(FRangesColored.Count));
 end;
 
 
@@ -612,7 +612,7 @@ var
   j: integer;
   Ed: TATSynEdit;
 begin
-  ListColoredRanges.Clear;
+  FRangesColored.Clear;
 
   for j:= 0 to EdList.Count-1 do
   begin
@@ -649,7 +649,7 @@ begin
   EdList:= TList.Create;
   AnClient:= nil;
   Buffer:= TATStringBuffer.Create;
-  ListColoredRanges:= TATRangeColoredList.Create;
+  FRangesColored:= TATSortedRanges.Create;
   FEnabledLineSeparators:= false;
   FEnabledSublexerTreeNodes:= false;
 
@@ -666,7 +666,7 @@ begin
   if Assigned(AnClient) then
     FreeAndNil(AnClient);
 
-  FreeAndNil(ListColoredRanges);
+  FreeAndNil(FRangesColored);
 
   FreeAndNil(Buffer);
   FreeAndNil(EdList);
@@ -1134,7 +1134,7 @@ begin
       CudaText issue #1710.
       artifacts visible with CudaText option "show_full_syntax_bg":true.
       }
-      ListColoredRanges.Clear;
+      FRangesColored.Clear;
     end;
   end;
 end;
@@ -1254,7 +1254,7 @@ var
   Style: TecSyntaxFormat;
   SHint: string;
   tokenStart, tokenEnd: TecSyntToken;
-  ColoredRange: TATRangeColored;
+  ColoredRange: TATSortedRange;
   i: integer;
 begin
   if not Assigned(AnClient) then Exit;
@@ -1295,7 +1295,7 @@ begin
       DoFoldAdd(Pnt1.X+1, Pnt1.Y, Pnt2.Y, R.Rule.DrawStaple, SHint);
     end;
 
-    //fill ListColoredRanges
+    //fill FRangesColored
     //not only if DymamicHilite enabled (e.g. AutoIt has always hilited blocks)
     if R.Rule.DynHighlight<>dhNone then
     begin
@@ -1319,7 +1319,7 @@ begin
             R.Rule,
             (R.Rule.HighlightPos=cpAny)
             );
-          ListColoredRanges.Add(ColoredRange);
+          FRangesColored.Add(ColoredRange);
         end;
     end;
   end;
@@ -1332,7 +1332,7 @@ procedure TATAdapterEControl.UpdateRangesSublex;
 var
   R: TecSubLexerRange;
   Style: TecSyntaxFormat;
-  ColoredRange: TATRangeColored;
+  ColoredRange: TATSortedRange;
   i: integer;
 begin
   for i:= 0 to AnClient.SubLexerRangeCount-1 do
@@ -1357,7 +1357,7 @@ begin
         nil,
         true
         );
-      ListColoredRanges.Add(ColoredRange);
+      FRangesColored.Add(ColoredRange);
     end;
   end;
 end;
@@ -1428,14 +1428,14 @@ end;
 
 function TATAdapterEControl.DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
 var
-  Rng: TATRangeColored;
+  Rng: TATSortedRange;
   i: integer;
 begin
   Result:= nil;
   //todo? binary search?
-  for i:= 0 to ListColoredRanges.Count-1 do
+  for i:= 0 to FRangesColored.Count-1 do
   begin
-    Rng:= ListColoredRanges[i];
+    Rng:= FRangesColored[i];
     if Rng.Active[AEditorIndex] then
       if Rng.Rule<>nil then
         if Rng.Rule.DynHighlight=dhBound then
