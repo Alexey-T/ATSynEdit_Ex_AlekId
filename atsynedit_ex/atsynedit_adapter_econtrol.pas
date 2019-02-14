@@ -1511,12 +1511,15 @@ end;
 
 
 function TATAdapterEControl.DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
+//Cannot use binary search here, because FRangesColoredBounds has overlapping ranges,
+//so using Find() will miss some tokens
 var
   Rng: TATSortedRange;
   i: integer;
 begin
   Result:= nil;
-  //todo? binary search?
+  if not IsDynamicHiliteEnabled then exit;
+
   for i:= 0 to FRangesColoredBounds.Count-1 do
   begin
     Rng:= FRangesColoredBounds[i];
