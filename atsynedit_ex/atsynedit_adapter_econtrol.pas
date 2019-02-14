@@ -100,7 +100,7 @@ type
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
     function DoFindToken(APos: TPoint): integer; inline;
-    function DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
+    function GetTokenColor_FromBoundRanges(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
     procedure DoParseBegin;
@@ -616,7 +616,7 @@ begin
     part.ColorBG:= GetTokenColorBG_FromColoredRanges(token.Range.PointStart, AColorBG, AEditorIndex);
 
     tokenStyle:= token.Style;
-    tokenStyle2:= DoFindTokenOverrideStyle(i, AEditorIndex);
+    tokenStyle2:= GetTokenColor_FromBoundRanges(i, AEditorIndex);
     if tokenStyle2<>nil then
       tokenStyle:= tokenStyle2;
     if tokenStyle<>nil then
@@ -1500,9 +1500,7 @@ begin
 end;
 
 
-function TATAdapterEControl.DoFindTokenOverrideStyle(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
-//Cannot use binary search here, because FRangesColoredBounds has overlapping ranges,
-//so using Find() will miss some tokens
+function TATAdapterEControl.GetTokenColor_FromBoundRanges(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
 var
   Rng: TATSortedRange;
   i: integer;
@@ -1510,6 +1508,8 @@ begin
   Result:= nil;
   if not IsDynamicHiliteEnabled then exit;
 
+  //Cannot use binary search here, because FRangesColoredBounds has overlapping ranges,
+  //so using Find() will miss some tokens
   for i:= 0 to FRangesColoredBounds.Count-1 do
   begin
     Rng:= FRangesColoredBounds[i];
