@@ -440,34 +440,24 @@ function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
   Rng: TATSortedRange;
-  Allow: boolean;
-  i: integer;
+  N: integer;
 begin
   Result:= ADefColor;
 
-  //todo? binary search?
-  for i:= FRangesColored.Count-1 downto 0 do
+  N:= FRangesColored.Find(APos);
+  if N>=0 then
   begin
-    Rng:= FRangesColored[i];
-
-    if Rng.ActiveAlways then
-      Allow:= true
-    else
-      Allow:=
-        Rng.Active[AEditorIndex] and
-        Assigned(Rng.Rule) and
-        (Rng.Rule.DynHighlight in [dhRange, dhRangeNoBound]);
-
-    if Allow and Rng.IsPosInside(APos) then
-      Exit(Rng.Color);
+    Rng:= FRangesColored[N];
+    if Rng.Active[AEditorIndex] and Rng.IsPosInside(APos) then
+      exit(Rng.Color);
   end;
 
-  for i:= FRangesSublexer.Count-1 downto 0 do
+  N:= FRangesSublexer.Find(APos);
+  if N>=0 then
   begin
-    //sublexer ranges are always active
-    Rng:= FRangesSublexer[i];
+    Rng:= FRangesSublexer[N];
     if Rng.IsPosInside(APos) then
-      Exit(Rng.Color);
+      exit(Rng.Color);
   end;
 end;
 
