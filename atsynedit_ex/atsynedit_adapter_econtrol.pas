@@ -434,6 +434,7 @@ begin
       end;
     end;
     Rng.Active[AEdit.EditorIndex]:= act;
+    ListColoredRanges[i]:= Rng;
   end;
 
   //deactivate ranges by DynSelectMin
