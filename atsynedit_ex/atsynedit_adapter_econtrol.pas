@@ -61,7 +61,12 @@ type
     function IsPosInside(const APos: TPoint): boolean;
   end;
 
-  TATSortedRanges = specialize TFPGList<TATSortedRange>;
+  { TATSortedRanges }
+
+  TATSortedRanges = class(specialize TFPGList<TATSortedRange>)
+  public
+    function Find(const APos: TPoint): integer;
+  end;
 
   TATRangeCond = (cCondInside, cCondAtBound, cCondOutside);
 
@@ -243,6 +248,62 @@ begin
   part.BorderDown:= cBorderEc[st.BorderTypeBottom];
   part.BorderLeft:= cBorderEc[st.BorderTypeLeft];
   part.BorderRight:= cBorderEc[st.BorderTypeRight];
+end;
+
+{ TATSortedRanges }
+
+function TATSortedRanges.Find(const APos: TPoint): integer;
+
+  function CompProc(ItemIndex: integer): integer; inline;
+  var
+    Item: TATSortedRange;
+  begin
+    Item:= Get(ItemIndex);
+    if Item.IsPosInside(APos) then
+      Result:= 0
+    else
+      Result:= ComparePoints(Item.Pos1, APos);
+  end;
+
+  function QuickSearch(var Index: integer): Boolean; inline;
+  var
+    L, H, I, C, NCount: Integer;
+  begin
+    Result := False;
+    NCount := Count;
+    if NCount = 0 then
+    begin
+      Index := -1;
+      Exit;
+    end;
+
+    L := 0;
+    H := NCount - 1;
+    while L <= H do
+    begin
+      I := (L + H) shr 1;
+      C := CompProc(I);
+      if C < 0 then L := I + 1 else
+      begin
+        if C = 0 then
+        begin
+          Result := True;
+          Index := I;
+          Exit;
+        end;
+        H := I - 1;
+      end;
+    end;
+    Index := L;
+    if Index >= NCount then
+      Index := NCount - 1;
+    if Index >= 0 then
+      if CompProc(Index) > 0 then
+        dec(Index);
+  end;
+
+begin
+  QuickSearch(Result);
 end;
 
 { TATRangeInCodeTree }
