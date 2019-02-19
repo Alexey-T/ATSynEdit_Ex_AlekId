@@ -438,8 +438,9 @@ begin
   if N>=0 then
   begin
     Rng:= FRangesColored[N];
-    if Rng.Active[AEditorIndex] and Rng.IsPosInside(APos) then
-      exit(Rng.Color);
+    if Rng.IsPosInside(APos) then
+      if Rng.ActiveAlways or Rng.Active[AEditorIndex] then
+        exit(Rng.Color);
   end;
 
   N:= FRangesSublexer.Find(APos);
