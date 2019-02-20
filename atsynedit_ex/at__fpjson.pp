@@ -835,40 +835,40 @@ end;
 function StringToJSONString(const S: TJSONStringType; Strict : Boolean = False): TJSONStringType;
 
 Var
-  I,J,L : Integer;
-  C : Char;
+  I : Integer;
+  C : WideChar;
+  SW : UnicodeString;
 
 begin
-  I:=1;
-  J:=1;
   Result:='';
-  L:=Length(S);
-  While I<=L do
-    begin
-    C:=S[I];
-    if (C in ['"','/','\',#0..#31]) then
-      begin
-      Result:=Result+Copy(S,J,I-J);
-      Case C of
-        '\' : Result:=Result+'\\';
-        '/' : if Strict then
-                Result:=Result+'\/'
-              else
-                Result:=Result+'/';
-        '"' : Result:=Result+'\"';
-        #8  : Result:=Result+'\b';
-        #9  : Result:=Result+'\t';
-        #10 : Result:=Result+'\n';
-        #12 : Result:=Result+'\f';
-        #13 : Result:=Result+'\r';
+  SW:=UTF8Decode(S);
+  for I:=1 to Length(SW) do
+  begin
+    C:=SW[I];
+    if Ord(C)>255 then
+      Result:=Result+'\u'+HexStr(Ord(C),4)
+    else
+    case C of
+      '\' : Result:=Result+'\\';
+      '/' : if Strict then
+              Result:=Result+'\/'
+            else
+              Result:=Result+'/';
+      '"' : Result:=Result+'\"';
+      #8  : Result:=Result+'\b';
+      #9  : Result:=Result+'\t';
+      #10 : Result:=Result+'\n';
+      #12 : Result:=Result+'\f';
+      #13 : Result:=Result+'\r';
       else
-        Result:=Result+'\u'+HexStr(Ord(C),4);
-      end;
-      J:=I+1;
-      end;
-    Inc(I);
+        begin
+          if Ord(C)<32 then
+            Result:=Result+'\u'+HexStr(Ord(C),4)
+          else
+            Result:=Result+Char(C);
+        end;
     end;
-  Result:=Result+Copy(S,J,I-1);
+  end;
 end;
 
 function JSONStringToString(const S: TJSONStringType): TJSONStringType;
