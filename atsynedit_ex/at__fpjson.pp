@@ -845,7 +845,7 @@ begin
   for I:=1 to Length(SW) do
   begin
     C:=SW[I];
-    if Ord(C)>255 then
+    if Ord(C)>127 then
       Result:=Result+'\u'+HexStr(Ord(C),4)
     else
     case C of
