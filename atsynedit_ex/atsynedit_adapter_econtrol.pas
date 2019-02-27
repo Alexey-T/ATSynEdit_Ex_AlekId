@@ -355,8 +355,6 @@ begin
   DoCheckEditorList;
   Ed:= Sender as TATSynEdit;
 
-  if Ed.Strings.LinesLenRaw[ALineIndex]>MaxLineLengthToParse then exit;
-
   AColorAfterEol:= clNone;
   DoCalcParts(AParts, ALineIndex, ACharIndex-1, ALineLen,
     Ed.Colors.TextFont,

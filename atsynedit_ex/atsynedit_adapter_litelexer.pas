@@ -340,8 +340,6 @@ begin
   if Application.Terminated then exit;
   Ed:= Sender as TATSynEdit;
 
-  if Ed.Strings.LinesLenRaw[ALineIndex]>MaxLineLengthToParse then exit;
-
   EdLine:= Ed.Strings.Lines[ALineIndex];
   NParts:= 0;
   NPos:= 1;
