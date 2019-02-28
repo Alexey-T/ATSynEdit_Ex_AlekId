@@ -94,6 +94,7 @@ type
     FOnLexerChange: TNotifyEvent;
     FOnParseBegin: TNotifyEvent;
     FOnParseDone: TNotifyEvent;
+    procedure DebugRangesColored;
     procedure DoCheckEditorList; inline;
     procedure DoFoldAdd(AX, AY, AY2: integer; AStaple: boolean; const AHint: string);
     procedure DoCalcParts(var AParts: TATLineParts; ALine, AX, ALen: integer;
@@ -120,7 +121,7 @@ type
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
     procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
-    procedure UpdateRangesFold;
+    procedure UpdateRangesFoldAndColored;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
     procedure SetLexer(AAnalizer: TecSyntAnalyzer);
@@ -426,6 +427,17 @@ begin
 end;
 
 
+procedure TATAdapterEControl.DebugRangesColored;
+var
+  Rng: TATSortedRange;
+begin
+  if FRangesColored.Count>0 then
+  begin
+    Rng:= FRangesColored[0];
+    Application.MainForm.Caption:= Format('RngColored: (%d,%d..%d,%d)', [Rng.Pos1.X, Rng.Pos1.Y, Rng.Pos2.X, Rng.Pos2.Y]);
+  end;
+end;
+
 function TATAdapterEControl.GetTokenColorBG_FromColoredRanges(APos: TPoint;
   ADefColor: TColor; AEditorIndex: integer): TColor;
 var
@@ -683,7 +695,7 @@ begin
   begin
     Ed:= TATSynEdit(EdList[j]);
     Ed.Fold.Clear;
-    Ed.Strings.ClearSeparators;
+    //Ed.Strings.ClearSeparators; //separators are not used in this adapter
   end;
 end;
 
@@ -1181,7 +1193,7 @@ begin
 
   if AUpdateBuffer then
   begin
-    SetLength(Lens, Ed.Strings.Count);
+    SetLength(Lens{%H-}, Ed.Strings.Count);
     for i:= 0 to Length(Lens)-1 do
       Lens[i]:= Ed.Strings.LinesLen[i];
     Buffer.Setup(Ed.Strings.TextString_Unicode, Lens);
@@ -1189,33 +1201,24 @@ begin
 
   if AAnalyze then
   begin
+    FRangesColored.Clear;
+    FRangesColoredBounds.Clear;
+    FRangesSublexer.Clear;
+
     DoAnalize(Ed, false);
 
     //don't clear ranges too early (avoid flicker with empty fold bar)
     if not EditorRunningCommand
       or IsDynamicHiliteEnabled then
-      UpdateRanges
-    else
-    begin
-      {
-      delete colored ranges, it's needed for Bash lexer,
-      $(....) blocks leave artifacts on fast editing.
-      CudaText issue #1710.
-      artifacts visible with CudaText option "show_full_syntax_bg":true.
-      }
-      FRangesColored.Clear;
-      FRangesColoredBounds.Clear;
-      FRangesSublexer.Clear;
-    end;
+      UpdateRanges;
   end;
 end;
 
 procedure TATAdapterEControl.UpdateRanges;
 begin
   DoClearRanges;
-  UpdateRangesFold;
+  UpdateRangesFoldAndColored;
   UpdateRangesSublex; //sublexer ranges last
-
   UpdateRangesActiveAll;
 end;
 
@@ -1318,7 +1321,7 @@ begin
 end;
 
 
-procedure TATAdapterEControl.UpdateRangesFold;
+procedure TATAdapterEControl.UpdateRangesFoldAndColored;
 var
   R: TecTextRange;
   Pnt1, Pnt2: TPoint;
