@@ -102,7 +102,7 @@ type
     function DoFindToken(APos: TPoint): integer; inline;
     function GetTokenColor_FromBoundRanges(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
     procedure DoFoldFromLinesHidden;
-    procedure DoChangeLog(Sender: TObject; ALine, ACount: integer);
+    procedure DoChangeLog(Sender: TObject; ALine: integer);
     procedure DoParseBegin;
     procedure DoParseDone;
     function GetIdleInterval: integer;
@@ -1451,7 +1451,7 @@ begin
     Result:= nil;
 end;
 
-procedure TATAdapterEControl.DoChangeLog(Sender: TObject; ALine, ACount: integer);
+procedure TATAdapterEControl.DoChangeLog(Sender: TObject; ALine: integer);
 var
   Pos: integer;
 begin
