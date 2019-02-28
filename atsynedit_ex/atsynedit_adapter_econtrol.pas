@@ -1249,7 +1249,7 @@ begin
 
   if AForceAnalizeAll then
   begin
-    AnClient.TextChanged(0, 1); //chg 1 char at pos 0
+    AnClient.TextChanged(0);
     AnClient.Analyze;
     AnClient.IdleAppend;
   end
@@ -1460,21 +1460,16 @@ begin
   //clear?
   if ALine=-1 then
   begin
-    AnClient.TextChanged(-1, 0);
+    AnClient.TextChanged(-1);
     Exit
   end;
-
-  //Count>0: add EolLen=1
-  //Count<0 means delete: minus EolLen
-  if ACount>0 then Inc(ACount) else
-    if ACount<0 then Dec(ACount);
 
   if ALine>=Buffer.Count then
     Pos:= Buffer.TextLength
   else
     Pos:= Buffer.CaretToStr(Point(0, ALine));
 
-  AnClient.TextChanged(Pos, ACount);
+  AnClient.TextChanged(Pos);
 end;
 
 procedure TATAdapterEControl.TimerDuringAnalyzeTimer(Sender: TObject);
