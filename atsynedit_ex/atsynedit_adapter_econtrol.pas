@@ -140,7 +140,7 @@ type
     property EnabledSublexerTreeNodes: boolean read FEnabledSublexerTreeNodes write FEnabledSublexerTreeNodes default false;
     procedure DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
     procedure DoAnalyzeFromLine(ALine: integer; AWait: boolean);
-    procedure Stop;
+    function Stop: boolean;
     procedure StopTreeUpdate;
 
     //tokens
@@ -788,8 +788,9 @@ begin
   FStopTreeUpdate:= true;
 end;
 
-procedure TATAdapterEControl.Stop;
+function TATAdapterEControl.Stop: boolean;
 begin
+  Result:= true;
   TimerDuringAnalyze.Enabled:= false;
 
   if not Application.Terminated then
@@ -807,7 +808,7 @@ begin
   end;
 
   if Assigned(AnClient) then
-    AnClient.Stop;
+    Result:= AnClient.Stop;
 end;
 
 
