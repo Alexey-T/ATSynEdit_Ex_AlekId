@@ -31,8 +31,6 @@ var
   //ATSynEdit.OnIdle will fire only if text size is bigger
   cAdapterIdleTextSize: integer = 10*1000;
 
-  cAdapterMaxLenToTokenize: integer = 4000;
-
 type
 
   { TATRangeInCodeTree }
@@ -1199,7 +1197,7 @@ begin
     SetLength(Lens{%H-}, Ed.Strings.Count);
     for i:= 0 to Length(Lens)-1 do
       Lens[i]:= Ed.Strings.LinesLen[i];
-    Buffer.Setup(Ed.Strings.TextString_Unicode(cAdapterMaxLenToTokenize), Lens);
+    Buffer.Setup(Ed.Strings.TextString_Unicode(cMaxLenToTokenize), Lens);
   end;
 
   if AAnalyze then
