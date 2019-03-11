@@ -104,6 +104,7 @@ type
     FontName: string;
     FontSize: integer;
     CommitChars: string;
+    CloseChars: string;
     IndexOfText: integer;
     IndexOfDesc: integer;
     SepChar: char;
@@ -335,7 +336,7 @@ procedure TFormATSynEditComplete.FormUTF8KeyPress(Sender: TObject;
   var UTF8Key: TUTF8Char);
 var
   Str: atString;
-  bCommit: boolean;
+  bCommit, bClose: boolean;
 begin
   inherited;
 
@@ -352,6 +353,8 @@ begin
   if Ord(UTF8Key[1])<32 then Exit;
 
   bCommit:= Pos(UTF8Key, CompletionOps.CommitChars)>0;
+  bClose:= Pos(UTF8Key, CompletionOps.CloseChars)>0;
+
   if bCommit then
     DoResult;
 
@@ -359,7 +362,7 @@ begin
   FEdit.DoCommand(cCommand_TextInsert, Str);
   DoUpdate;
 
-  if bCommit then
+  if bCommit or bClose then
     Close;
 
   UTF8Key:= '';
@@ -591,6 +594,7 @@ initialization
     FontName := 'default';
     FontSize := 10;
     CommitChars := ' .,;/\''"=<>()[]{}';
+    CloseChars := '';
     IndexOfText := 1;
     IndexOfDesc := 2;
     SepChar := '|';
