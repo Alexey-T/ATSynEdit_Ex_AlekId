@@ -593,8 +593,8 @@ initialization
     FontStyles[0] := [fsBold];
     FontName := 'default';
     FontSize := 10;
-    CommitChars := ' .,;/\''"=<>()[]{}';
-    CloseChars := '';
+    CommitChars := ' .,;/\''"';
+    CloseChars := '<>()[]{}=';
     IndexOfText := 1;
     IndexOfDesc := 2;
     SepChar := '|';

@@ -291,9 +291,6 @@ procedure DoEditorCompletionHtml(AEdit: TATSynEdit;
 begin
   Acp.Ed:= AEdit;
 
-  CompletionOps.CommitChars:= ' .,;/\''"=<()[]{}'; //exclude '>'
-  CompletionOps.CloseChars:= '>';
-
   //load file only once
   if Acp.List.Count=0 then
   begin

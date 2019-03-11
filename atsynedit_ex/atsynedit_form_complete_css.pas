@@ -160,9 +160,6 @@ procedure DoEditorCompletionCss(AEdit: TATSynEdit;
 begin
   Acp.Ed:= AEdit;
 
-  CompletionOps.CommitChars:= ' .,;/\''"=<>()[]{}';
-  CompletionOps.CloseChars:= '';
-
   //load file only once
   if Acp.List.Count=0 then
   begin
