@@ -104,9 +104,25 @@ begin
   begin
     s_item:= List.Values[s_tag];
     if s_item='' then exit;
+
+    EditorGetCurrentWord(Ed,
+      Caret.PosX, Caret.PosY,
+      cWordChars,
+      s_word,
+      ACharsLeft,
+      ACharsRight);
+
     repeat
       s_val:= SGetItem(s_item);
       if s_val='' then Break;
+
+      //filter values by cur word (not case sens)
+      if s_word<>'' then
+      begin
+        ok:= SBeginsWith(UpperCase(s_val), UpperCase(s_word));
+        if not ok then Continue;
+      end;
+
       AText:= AText+'css '+s_tag+'|'+s_val+#1' '#13;
     until false;
   end
