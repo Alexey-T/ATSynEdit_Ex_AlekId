@@ -16,8 +16,7 @@
       </CodeGeneration>
       <Other>
         <CustomOptions Value="-Sa
--dDEBUG
--dDEBUGLOG"/>
+-dDEBUG"/>
       </Other>
     </CompilerOptions>
     <Description Value="Package, additional to ATSynEdit. It has the following parts splitted from ATSynEdit, to avoid build errors:
@@ -28,7 +27,7 @@
 Requires packages: ATSynEdit, ATFlatControls, EControl
 "/>
     <License Value="MPL 2.0 or LGPL"/>
-    <Version Major="1" Minor="1"/>
+    <Version Major="1" Minor="2"/>
     <Files Count="9">
       <Item1>
         <Filename Value="atsynedit_adapter_econtrol.pas"/>
