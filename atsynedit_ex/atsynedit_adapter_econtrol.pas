@@ -4,7 +4,7 @@ License: MPL 2.0 or LGPL
 }
 unit ATSynEdit_Adapter_EControl;
 
-{$mode objfpc}{$H+}
+{$mode Delphi}{$H+}
 {$ModeSwitch advancedrecords}
 
 interface
@@ -52,7 +52,7 @@ type
     Rule: TecTagBlockCondition;
     ActiveAlways: boolean;
     Active: array[0..Pred(cMaxStringsClients)] of boolean;
-    class operator =(const a, b: TATSortedRange): boolean;
+    class operator Equal(const a, b: TATSortedRange): boolean;
     procedure Init(
       APos1, APos2: TPoint;
       AToken1, AToken2: integer;
@@ -63,7 +63,7 @@ type
 
   { TATSortedRanges }
 
-  TATSortedRanges = class(specialize TFPGList<TATSortedRange>)
+  TATSortedRanges = class(TFPGList<TATSortedRange>)
   public
     function Find(const APos: TPoint): integer;
   end;
@@ -75,8 +75,8 @@ procedure ClearTreeviewWithData(ATree: TTreeView);
 type
   { TATAdapterEControl }
 
-  TATAdapterEControl = class(TATAdapterHilite)
-  private
+  TATAdapterEControl = class(TATAdapterHilite, ISynEditAdapter)
+  strict private
     EdList: TList;
     Buffer: TATStringBuffer;
     TimerDuringAnalyze: TTimer;
@@ -89,6 +89,7 @@ type
     FBusyTreeUpdate: boolean;
     FBusyTimer: boolean;
     FStopTreeUpdate: boolean;
+    FUpdateSyntaxPending:boolean;
     FTimeParseBegin: QWORD;
     FTimeParseElapsed: integer;
     FOnLexerChange: TNotifyEvent;
@@ -101,6 +102,7 @@ type
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
     function DoFindToken(APos: TPoint): integer; inline;
+    procedure DoUpdatePending;
     function GetTokenColor_FromBoundRanges(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine: integer);
@@ -127,6 +129,8 @@ type
     procedure SetLexer(AAnalizer: TecSyntAnalyzer);
     function GetLexerSuportsDynamicHilite: boolean;
     function IsDynamicHiliteEnabled: boolean;
+    procedure SyntaxDoneHandler();
+    procedure AppendToPosDone();
   public
     AnClient: TecClientSyntAnalyzer;
     //
@@ -185,7 +189,9 @@ procedure CodetreeSelectItemForPosition(ATree: TTreeView; APos: TPoint);
 
 implementation
 
-uses Math;
+uses
+  {$IFDEF DEBUGLOG} SynCommons, SynLog,mORMotHttpClient,  {$ENDIF}
+  Math;
 
 const
   cBorderEc: array[TecBorderLineType] of TATLineStyle = (
@@ -307,7 +313,7 @@ end;
 
 { TATSortedRange }
 
-class operator TATSortedRange.=(const a, b: TATSortedRange): boolean;
+class operator TATSortedRange.Equal(const a, b: TATSortedRange): boolean;
 begin
   Result:= false;
 end;
@@ -510,7 +516,9 @@ var
   i, j: integer;
 begin
   if not IsDynamicHiliteEnabled then Exit;
-
+  {$IFDEF DEBUGLOG}
+  TSynLog.Add.Log(sllCustom1, 'UpdateRangesActive');
+  {$ENDIF}
   UpdateRangesActive_Ex(AEdit, FRangesColored);
   UpdateRangesActive_Ex(AEdit, FRangesColoredBounds);
 
@@ -600,8 +608,7 @@ begin
   //debug
   //Application.MainForm.Caption:= Format('adapter startindex %d', [startindex]);
 
-  for i:= startindex to AnClient.TagCount-1 do
-  begin
+  for i:= startindex to AnClient.TagCount-1 do  begin
     token:= AnClient.Tags[i];
     tokenStart:= token.Range.PointStart;
     tokenEnd:= token.Range.PointEnd;
@@ -735,7 +742,7 @@ begin
   TimerDuringAnalyze:= TTimer.Create(Self);
   TimerDuringAnalyze.Enabled:= false;
   TimerDuringAnalyze.Interval:= cAdapterTimerDuringAnalyzeInterval;
-  TimerDuringAnalyze.OnTimer:= @TimerDuringAnalyzeTimer;
+  TimerDuringAnalyze.OnTimer:= TimerDuringAnalyzeTimer;
 end;
 
 destructor TATAdapterEControl.Destroy;
@@ -770,7 +777,7 @@ begin
     if EdList.IndexOf(AEditor)<0 then
     begin
       EdList.Add(AEditor);
-      TATSynEdit(AEditor).Strings.OnLog:= @DoChangeLog;
+      TATSynEdit(AEditor).Strings.OnLog:= DoChangeLog;
       TATSynEdit(AEditor).AdapterForHilite:= Self;
     end;
   end;
@@ -808,7 +815,7 @@ begin
   end;
 
   if Assigned(AnClient) then
-    Result:= AnClient.Stop;
+    Result:= AnClient.StopSyntax(false);
 end;
 
 
@@ -916,7 +923,10 @@ var
   NodeData: pointer;
   RangeNew: TATRangeInCodeTree;
   i: integer;
+  isSynataxBusy:boolean;
 begin
+  isSynataxBusy:= assigned(AnClient) and (AnClient.ParserStatus<psAborted);
+  if isSynataxBusy then exit;
   FStopTreeUpdate:= false;
   FBusyTreeUpdate:= true;
   //ATree.Items.BeginUpdate;
@@ -924,10 +934,11 @@ begin
   try
     ClearTreeviewWithData(ATree);
     if AnClient=nil then exit;
+    AnClient.WaitTillCoherent();
+    try
     NameLexer:= AnClient.Owner.LexerName;
 
-    for i:= 0 to AnClient.RangeCount-1 do
-    begin
+    for i:= 0 to AnClient.RangeCount-1 do  begin
       if FStopTreeUpdate then exit;
       if Application.Terminated then exit;
       if (i mod cProgressRangeCount)=0 then
@@ -1010,7 +1021,8 @@ begin
       NodeParent.Data:= RangeNew;
     end;
 
-  finally
+   finally AnClient.ReleaseBackgroundLock();end;
+   finally
     //ATree.Items.EndUpdate;
     ATree.Invalidate;
     FBusyTreeUpdate:= false;
@@ -1141,7 +1153,8 @@ end;
 
 procedure TATAdapterEControl.OnEditorCaretMove(Sender: TObject);
 begin
-  UpdateRangesActive(Sender as TATSynEdit);
+  if not FUpdateSyntaxPending then
+     UpdateRangesActive(Sender as TATSynEdit);
 end;
 
 
@@ -1157,7 +1170,8 @@ begin
 
   if Assigned(AAnalizer) then
   begin
-    AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil);
+    AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil,self, true);
+
     UpdateData(true, true);
   end;
 
@@ -1178,7 +1192,7 @@ procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
 begin
   DoCheckEditorList;
   UpdateData(false, true);
-  UpdateEditors(true, true);
+ // UpdateEditors(true, true);
 end;
 
 procedure TATAdapterEControl.UpdateData(AUpdateBuffer, AAnalyze: boolean);
@@ -1194,17 +1208,21 @@ begin
 
   if AUpdateBuffer then
   begin
+    AnClient.StopSyntax(false);
     SetLength(Lens{%H-}, Ed.Strings.Count);
+
     for i:= 0 to Length(Lens)-1 do
       Lens[i]:= Ed.Strings.LinesLen[i];
+
+
+    AnClient.WaitTillCoherent();
+    try
     Buffer.Setup(Ed.Strings.TextString_Unicode(cMaxLenToTokenize), Lens);
+    finally AnClient.ReleaseBackgroundLock();end;
   end;
 
-  if AAnalyze then
-  begin
-    FRangesColored.Clear;
-    FRangesColoredBounds.Clear;
-    FRangesSublexer.Clear;
+  if AAnalyze then  begin
+    DoUpdatePending;
 
     DoAnalize(Ed, false);
 
@@ -1219,6 +1237,9 @@ end;
 
 procedure TATAdapterEControl.UpdateRanges;
 begin
+  {$IFDEF DEBUGLOG}
+  TSynLog.Add.Log(sllCustom1, 'UpdateRanges');
+  {$ENDIF}
   DoClearRanges;
   UpdateRangesFoldAndColored;
   UpdateRangesSublex; //sublexer ranges last
@@ -1257,10 +1278,10 @@ begin
   begin
     AnClient.TextChanged(0);
     AnClient.Analyze;
-    AnClient.IdleAppend;
+    AnClient.HandleAddWork();
+
   end
-  else
-  begin
+  else  begin
     //LineBottom=0, if file just opened at beginning.
     //or >0 of file is edited at some scroll pos
     NLine:= AEdit.LineBottom;
@@ -1269,10 +1290,10 @@ begin
     NLine:= Min(NLine, Buffer.Count-1);
     NPos:= Buffer.CaretToStr(Point(0, NLine));
     AnClient.AppendToPos(NPos);
-    AnClient.IdleAppend;
+    AnClient.HandleAddWork;
   end;
 
-  if AnClient.IsFinished then
+  if AnClient.ParserStatus>=psAborted then
   begin
     DoParseDone;
   end
@@ -1449,6 +1470,14 @@ begin
   Result:= AnClient.PriorTokenAt(AnClient.Buffer.CaretToStr(APos));
 end;
 
+procedure TATAdapterEControl.DoUpdatePending;
+begin
+  FUpdateSyntaxPending:= true;
+  //FRangesColored.Clear;
+  //FRangesColoredBounds.Clear;
+  //FRangesSublexer.Clear;
+end;
+
 function TATAdapterEControl.GetLexer: TecSyntAnalyzer;
 begin
   if Assigned(AnClient) then
@@ -1485,13 +1514,12 @@ begin
     TimerDuringAnalyze.Enabled:= false;
     exit
   end;
-
+  exit;
   if not Assigned(AnClient) then Exit;
-
+  if (FBusyTreeUpdate or FBusyTimer) then Exit;
   FBusyTimer:= true;
   try
-    if AnClient.IsFinished then
-    begin
+    if AnClient.ParserStatus>=psAborted then begin
       TimerDuringAnalyze.Enabled:= false;
       UpdateRanges;
       DoParseDone;
@@ -1512,8 +1540,7 @@ begin
 
   //Cannot use binary search here, because FRangesColoredBounds has overlapping ranges,
   //so using Find() will miss some tokens
-  for i:= 0 to FRangesColoredBounds.Count-1 do
-  begin
+  for i:= 0 to FRangesColoredBounds.Count-1 do  begin
     Rng:= FRangesColoredBounds[i];
     if Rng.Active[AEditorIndex] then
       //if Rng.Rule<>nil then
@@ -1549,6 +1576,25 @@ begin
   Result:= DynamicHiliteActiveNow(Ed.Strings.Count);
 end;
 
+procedure TATAdapterEControl.SyntaxDoneHandler();
+begin
+  FUpdateSyntaxPending:=false;
+  DoParseDone;
+end;
+
+procedure TATAdapterEControl.AppendToPosDone();
+var edit:Pointer;
+begin
+  {$IFDEF DEBUGLOG}
+  TSynLog.Add.Log(sllClient, 'AppendToPosDone');
+  {$ENDIF}
+ for edit in  EdList do begin
+   if assigned(edit) and (TObject(edit) is TATSynEdit) then
+      TATSynEdit(edit).Invalidate;
+ end;
+
+end;
+
 procedure TATAdapterEControl.DoParseBegin;
 begin
   if Assigned(FOnParseBegin) then
@@ -1562,9 +1608,7 @@ begin
   //UpdateRanges call needed for small files, which are parsed to end by one IdleAppend call,
   //and timer didn't tick
   UpdateRanges;
-
   FTimeParseElapsed:= GetTickCount64-FTimeParseBegin;
-
   if Assigned(FOnParseDone) then
     FOnParseDone(Self);
 
@@ -1580,9 +1624,9 @@ begin
   NPos:= Buffer.CaretToStr(Point(0, ALine));
   AnClient.ChangedAtPos(NPos);
   AnClient.AppendToPos(Buffer.TextLength);
-  AnClient.IdleAppend;
+  AnClient.HandleAddWork;
 
-  if AnClient.IsFinished then
+  if AnClient.ParserStatus>=psAborted then
   begin
     DoParseDone;
   end
@@ -1591,8 +1635,7 @@ begin
     TimerDuringAnalyze.Enabled:= true;
 
     if AWait then
-      while not AnClient.IsFinished do
-      begin
+      while AnClient.ParserStatus<psAborted do begin
         Sleep(TimerDuringAnalyze.Interval+20);
         Application.ProcessMessages;
       end;

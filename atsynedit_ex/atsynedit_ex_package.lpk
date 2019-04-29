@@ -9,6 +9,16 @@
       <SearchPaths>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
+      <CodeGeneration>
+        <Optimizations>
+          <OptimizationLevel Value="0"/>
+        </Optimizations>
+      </CodeGeneration>
+      <Other>
+        <CustomOptions Value="-Sa
+-dDEBUG
+-dDEBUGLOG"/>
+      </Other>
     </CompilerOptions>
     <Description Value="Package, additional to ATSynEdit. It has the following parts splitted from ATSynEdit, to avoid build errors:
 - Adapter for EControl (SynWrite) lexers
@@ -42,11 +52,11 @@ Requires packages: ATSynEdit, ATFlatControls, EControl
       </Item5>
       <Item6>
         <Filename Value="atsynedit_adapter_litelexer.pas"/>
-        <UnitName Value="atsynedit_adapter_litelexer"/>
+        <UnitName Value="ATSynEdit_Adapter_LiteLexer"/>
       </Item6>
       <Item7>
         <Filename Value="at__jsonconf.pp"/>
-        <UnitName Value="at__jsonconf"/>
+        <UnitName Value="at__jsonConf"/>
       </Item7>
       <Item8>
         <Filename Value="at__jsonparser.pp"/>
