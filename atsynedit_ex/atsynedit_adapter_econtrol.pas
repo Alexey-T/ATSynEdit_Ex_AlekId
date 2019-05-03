@@ -816,9 +816,9 @@ begin
   end;
 
   if Assigned(AnClient) then
-    Result:= AnClient.StopSyntax(false);
+    Result:= AnClient.StopSyntax(true);
+    //AT: if StopSyntax(false), CudaText File/Reopen makes uncolored text
 end;
-
 
 
 function TATAdapterEControl.GetTokenString(const token: TecSyntToken): string;
@@ -1164,6 +1164,7 @@ end;
 
 procedure TATAdapterEControl.SetLexer(AAnalizer: TecSyntAnalyzer);
 begin
+  Stop;
   DoClearRanges;
   UpdateEditors(false, true);
 
