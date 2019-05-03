@@ -928,7 +928,7 @@ var
 begin
   //check that parsing is busy
   if Assigned(AnClient) then
-    while (AnClient.ParserStatus<psAborted) do
+    while AnClient.IsParserBusy do
       Sleep(cSleepToFill);
 
   FStopTreeUpdate:= false;
@@ -1209,6 +1209,7 @@ var
   Strs: TATStrings;
   i: integer;
 begin
+  if not Assigned(AnClient) then exit;
   AnClient.StopSyntax(false);
 
   if EdList.Count=0 then Exit;
@@ -1303,7 +1304,7 @@ begin
     AnClient.HandleAddWork;
   end;
 
-  if AnClient.ParserStatus>=psAborted then
+  if not AnClient.IsParserBusy then
   begin
     DoParseDone;
   end
@@ -1529,7 +1530,7 @@ begin
   if (FBusyTreeUpdate or FBusyTimer) then Exit;
   FBusyTimer:= true;
   try
-    if AnClient.ParserStatus>=psAborted then begin
+    if not AnClient.IsParserBusy then begin
       TimerDuringAnalyze.Enabled:= false;
       UpdateRanges;
       DoParseDone;
@@ -1636,7 +1637,7 @@ begin
   AnClient.AppendToPos(Buffer.TextLength);
   AnClient.HandleAddWork;
 
-  if AnClient.ParserStatus>=psAborted then
+  if not AnClient.IsParserBusy then
   begin
     DoParseDone;
   end
@@ -1645,7 +1646,7 @@ begin
     TimerDuringAnalyze.Enabled:= true;
 
     if AWait then
-      while AnClient.ParserStatus<psAborted do begin
+      while AnClient.IsParserBusy do begin
         Sleep(TimerDuringAnalyze.Interval+20);
         Application.ProcessMessages;
       end;
