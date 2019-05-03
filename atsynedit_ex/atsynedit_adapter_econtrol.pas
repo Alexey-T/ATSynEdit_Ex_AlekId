@@ -117,13 +117,13 @@ type
       ADefColor: TColor; AEditorIndex: integer): TColor;
     function EditorRunningCommand: boolean;
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
-    procedure UpdateBuffer;
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateRangesActiveAll;
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
-    procedure UpdateData(AAnalyze: boolean);
+    procedure UpdateBuffer;
+    procedure UpdateState;
     procedure UpdateRangesFoldAndColored;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
@@ -1176,7 +1176,7 @@ begin
     if Buffer.TextLength=0 then
       UpdateBuffer;
 
-    UpdateData(true);
+    UpdateState;
   end;
 
   if Assigned(FOnLexerChange) then
@@ -1189,14 +1189,14 @@ procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
 begin
   DoCheckEditorList;
   UpdateBuffer;
-  //if CurrentIdleInterval=0, OnEditorIdle will not fire, analyze here
-  UpdateData(CurrentIdleInterval=0);
+  if CurrentIdleInterval=0 then //OnEditorIdle will not fire, analyze here
+    UpdateState;
 end;
 
 procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateData(true);
+  UpdateState;
  // UpdateEditors(true, true);
 end;
 
@@ -1223,27 +1223,23 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.UpdateData(AAnalyze: boolean);
+procedure TATAdapterEControl.UpdateState;
 var
   Ed: TATSynEdit;
 begin
-  if EdList.Count=0 then Exit;
   if not Assigned(AnClient) then Exit;
+  if EdList.Count=0 then Exit;
+  Ed:= TATSynEdit(EdList[0]);
 
-  if AAnalyze then
-  begin
-    DoUpdatePending;
+  DoUpdatePending;
+  DoAnalize(Ed, false);
 
-    Ed:= TATSynEdit(EdList[0]);
-    DoAnalize(Ed, false);
-
-    {
-    //don't clear ranges too early (avoid flicker with empty fold bar)
-    if not EditorRunningCommand
-      or IsDynamicHiliteEnabled then
-      UpdateRanges;
-      }
-  end;
+  {
+  //don't clear ranges too early (avoid flicker with empty fold bar)
+  if not EditorRunningCommand
+    or IsDynamicHiliteEnabled then
+    UpdateRanges;
+    }
 end;
 
 procedure TATAdapterEControl.UpdateRanges;
