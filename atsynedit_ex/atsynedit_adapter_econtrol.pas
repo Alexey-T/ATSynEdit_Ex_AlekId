@@ -159,7 +159,7 @@ type
 
     //support for syntax-tree
     property TreeBusy: boolean read FBusyTreeUpdate;
-    procedure TreeFill(ATree: TTreeView);
+    procedure TreeFill(ATree: TTreeView; AWaitForFilling: boolean=false);
     procedure TreeGetPositionOfRange_EC(const R: TecTextRange; out APosBegin, APosEnd: TPoint);
     function TreeGetRangeOfPosition(APos: TPoint): TecTextRange;
 
@@ -913,9 +913,10 @@ begin
   until false;
 end;
 
-procedure TATAdapterEControl.TreeFill(ATree: TTreeView);
+procedure TATAdapterEControl.TreeFill(ATree: TTreeView; AWaitForFilling: boolean=false);
 const
   cProgressRangeCount = 5000;
+  cSleepToFill = 300;
 var
   R, RangeParent: TecTextRange;
   NodeParent, NodeGroup: TTreeNode;
@@ -924,10 +925,17 @@ var
   NodeData: pointer;
   RangeNew: TATRangeInCodeTree;
   i: integer;
-  isSynataxBusy:boolean;
 begin
-  isSynataxBusy:= assigned(AnClient) and (AnClient.ParserStatus<psAborted);
-  if isSynataxBusy then exit;
+  //check that parsing is busy
+  if Assigned(AnClient) then
+  begin
+    if (AnClient.ParserStatus<psAborted) then
+      if AWaitForFilling then
+        while (AnClient.ParserStatus<psAborted) do Sleep(cSleepToFill)
+      else
+        exit;
+  end;
+
   FStopTreeUpdate:= false;
   FBusyTreeUpdate:= true;
   //ATree.Items.BeginUpdate;
