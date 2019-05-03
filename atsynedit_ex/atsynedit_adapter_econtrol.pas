@@ -117,13 +117,13 @@ type
       ADefColor: TColor; AEditorIndex: integer): TColor;
     function EditorRunningCommand: boolean;
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
-    procedure UpdateBuffer(Ed: TATSynEdit);
+    procedure UpdateBuffer;
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateRangesActiveAll;
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
-    procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
+    procedure UpdateData(AAnalyze: boolean);
     procedure UpdateRangesFoldAndColored;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
@@ -1173,7 +1173,10 @@ begin
   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil,self, true);
 
-    UpdateData(true, true);
+    if Buffer.TextLength=0 then
+      UpdateBuffer;
+
+    UpdateData(true);
   end;
 
   if Assigned(FOnLexerChange) then
@@ -1185,18 +1188,19 @@ end;
 procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
 begin
   DoCheckEditorList;
+  UpdateBuffer;
   //if CurrentIdleInterval=0, OnEditorIdle will not fire, analyze here
-  UpdateData(true, CurrentIdleInterval=0);
+  UpdateData(CurrentIdleInterval=0);
 end;
 
 procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateData(false, true);
+  UpdateData(true);
  // UpdateEditors(true, true);
 end;
 
-procedure TATAdapterEControl.UpdateBuffer(Ed: TATSynEdit);
+procedure TATAdapterEControl.UpdateBuffer;
 var
   Lens: array of integer;
   Strs: TATStrings;
@@ -1204,7 +1208,8 @@ var
 begin
   AnClient.StopSyntax(false);
 
-  Strs:= Ed.Strings;
+  if EdList.Count=0 then Exit;
+  Strs:= TATSynEdit(EdList[0]).Strings;
   SetLength(Lens{%H-}, Strs.Count);
 
   for i:= 0 to Length(Lens)-1 do
@@ -1218,22 +1223,18 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.UpdateData(AUpdateBuffer, AAnalyze: boolean);
+procedure TATAdapterEControl.UpdateData(AAnalyze: boolean);
 var
   Ed: TATSynEdit;
 begin
   if EdList.Count=0 then Exit;
   if not Assigned(AnClient) then Exit;
 
-  Ed:= TATSynEdit(EdList[0]);
-
-  if AUpdateBuffer then
-    UpdateBuffer(Ed);
-
   if AAnalyze then
   begin
     DoUpdatePending;
 
+    Ed:= TATSynEdit(EdList[0]);
     DoAnalize(Ed, false);
 
     {
