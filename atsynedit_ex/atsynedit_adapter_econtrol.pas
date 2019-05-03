@@ -1206,6 +1206,7 @@ begin
 
   AnClient.WaitTillCoherent();
   try
+    Buffer.Unlock; //AT: workaround for assert violation on commenting lines in Python files
     Buffer.Setup(Strs.TextString_Unicode(cMaxLenToTokenize), Lens);
   finally
     AnClient.ReleaseBackgroundLock();
