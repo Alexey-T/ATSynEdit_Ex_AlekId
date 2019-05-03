@@ -117,6 +117,7 @@ type
       ADefColor: TColor; AEditorIndex: integer): TColor;
     function EditorRunningCommand: boolean;
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
+    procedure UpdateBuffer(Ed: TATSynEdit);
     procedure UpdateRanges;
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateRangesActiveAll;
@@ -1195,11 +1196,31 @@ begin
  // UpdateEditors(true, true);
 end;
 
+procedure TATAdapterEControl.UpdateBuffer(Ed: TATSynEdit);
+var
+  Lens: array of integer;
+  Strs: TATStrings;
+  i: integer;
+begin
+  AnClient.StopSyntax(false);
+
+  Strs:= Ed.Strings;
+  SetLength(Lens{%H-}, Strs.Count);
+
+  for i:= 0 to Length(Lens)-1 do
+    Lens[i]:= Strs.LinesLen[i];
+
+  AnClient.WaitTillCoherent();
+  try
+    Buffer.Setup(Strs.TextString_Unicode(cMaxLenToTokenize), Lens);
+  finally
+    AnClient.ReleaseBackgroundLock();
+  end;
+end;
+
 procedure TATAdapterEControl.UpdateData(AUpdateBuffer, AAnalyze: boolean);
 var
   Ed: TATSynEdit;
-  Lens: array of integer;
-  i: integer;
 begin
   if EdList.Count=0 then Exit;
   if not Assigned(AnClient) then Exit;
@@ -1207,21 +1228,10 @@ begin
   Ed:= TATSynEdit(EdList[0]);
 
   if AUpdateBuffer then
+    UpdateBuffer(Ed);
+
+  if AAnalyze then
   begin
-    AnClient.StopSyntax(false);
-    SetLength(Lens{%H-}, Ed.Strings.Count);
-
-    for i:= 0 to Length(Lens)-1 do
-      Lens[i]:= Ed.Strings.LinesLen[i];
-
-
-    AnClient.WaitTillCoherent();
-    try
-    Buffer.Setup(Ed.Strings.TextString_Unicode(cMaxLenToTokenize), Lens);
-    finally AnClient.ReleaseBackgroundLock();end;
-  end;
-
-  if AAnalyze then  begin
     DoUpdatePending;
 
     DoAnalize(Ed, false);
