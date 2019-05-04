@@ -21,7 +21,10 @@ uses
   ATStringProc,
   ATStringProc_TextBuffer,
   ATStrings,
-  ec_SyntAnal;
+  ec_SyntAnal,
+  ec_rules,
+  ec_SyntaxClient,
+  ec_syntax_format;
 
 var
   //ATSynEdit.OnIdle timer interval
@@ -912,7 +915,7 @@ var
 begin
   //check that parsing is busy
   if Assigned(AnClient) then
-    while AnClient.IsParserBusy do
+    while AnClient.ParserStatus<psAborted do
       Sleep(cSleepToFill);
 
   FStopTreeUpdate:= false;
@@ -938,7 +941,7 @@ begin
 
       if not FEnabledSublexerTreeNodes then
       begin
-        NameRule:= R.Rule.SyntOwner.LexerName;
+        NameRule:= (R.Rule.SyntOwner as TecSyntAnalyzer).LexerName;
         //must allow lexer name "PHP_" if main lexer is "PHP"
         if NameRule[Length(NameRule)]='_' then
           SetLength(NameRule, Length(NameRule)-1);
@@ -1290,7 +1293,7 @@ begin
     AnClient.HandleAddWork;
   end;
 
-  if not AnClient.IsParserBusy then
+  if AnClient.ParserStatus>=psAborted then
   begin
     DoParseDone;
   end;
@@ -1593,14 +1596,14 @@ begin
   AnClient.AppendToPos(Buffer.TextLength);
   AnClient.HandleAddWork;
 
-  if not AnClient.IsParserBusy then
+  if AnClient.ParserStatus>=psAborted then
   begin
     DoParseDone;
   end
   else
   begin
     if AWait then
-      while AnClient.IsParserBusy do begin
+      while AnClient.ParserStatus<psAborted do begin
         Sleep(250);
         Application.ProcessMessages;
       end;
