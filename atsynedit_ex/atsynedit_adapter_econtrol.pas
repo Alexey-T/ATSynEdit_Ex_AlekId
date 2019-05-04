@@ -21,11 +21,14 @@ uses
   ATStringProc,
   ATStringProc_TextBuffer,
   ATStrings,
-  ec_SyntAnal;
+  ec_rules,
+  ec_syntax_format,
+  ec_SyntAnal,
+  ec_SyntaxClient;
 
 var
   //interval of TimerDuringAnalyze
-  cAdapterTimerDuringAnalyzeInterval: integer = 200;
+  cAdapterTimerDuringAnalyzeInterval: integer = 1000;
   //ATSynEdit.OnIdle timer interval
   cAdapterIdleInterval: integer = 500;
   //ATSynEdit.OnIdle will fire only if text size is bigger
@@ -95,6 +98,7 @@ type
     FOnLexerChange: TNotifyEvent;
     FOnParseBegin: TNotifyEvent;
     FOnParseDone: TNotifyEvent;
+    FLastPaintPos:integer;
     procedure DebugRangesColored;
     procedure DoCheckEditorList; inline;
     procedure DoFoldAdd(AX, AY, AY2: integer; AStaple: boolean; const AHint: string);
@@ -110,6 +114,7 @@ type
     procedure DoParseDone;
     function GetIdleInterval: integer;
     function GetRangeParent(const R: TecTextRange): TecTextRange;
+    procedure InvalidateEditors;
     function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: TPoint; ACond: TATRangeCond): boolean;
     function GetTokenColorBG_FromColoredRanges(APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
@@ -117,7 +122,7 @@ type
       ADefColor: TColor; AEditorIndex: integer): TColor;
     function EditorRunningCommand: boolean;
     procedure TimerDuringAnalyzeTimer(Sender: TObject);
-    procedure UpdateRanges;
+    procedure UpdateRanges();
     procedure UpdateRangesActive(AEdit: TATSynEdit);
     procedure UpdateRangesActiveAll;
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
@@ -131,6 +136,8 @@ type
     function IsDynamicHiliteEnabled: boolean;
     procedure SyntaxDoneHandler();
     procedure AppendToPosDone();
+  protected
+    function CalcLastVisiblePos(const AEdit: TATSynEdit): integer;
   public
     AnClient: TecClientSyntAnalyzer;
     //
@@ -190,7 +197,7 @@ procedure CodetreeSelectItemForPosition(ATree: TTreeView; APos: TPoint);
 implementation
 
 uses
-  {$IFDEF DEBUGLOG} SynCommons, SynLog,mORMotHttpClient,  {$ENDIF}
+  {$IFDEF DEBUGLOG} SynCommons, SynLog,  {$ENDIF}
   Math;
 
 const
@@ -360,6 +367,8 @@ var
 begin
   if not Assigned(AnClient) then Exit;
   DoCheckEditorList;
+  if ALineIndex > AnClient.LastAppendedPoint.Y then
+     UpdateData(false, true);
   Ed:= Sender as TATSynEdit;
 
   AColorAfterEol:= clNone;
@@ -694,6 +703,7 @@ var
   j: integer;
   Ed: TATSynEdit;
 begin
+  FLastPaintPos:=-1;
   FRangesColored.Clear;
   FRangesColoredBounds.Clear;
   FRangesSublexer.Clear;
@@ -895,6 +905,16 @@ begin
   end;
 end;
 
+procedure TATAdapterEControl.InvalidateEditors;
+var
+  edit: Pointer;
+begin
+  for edit in  EdList do begin
+    if assigned(edit) and (TObject(edit) is TATSynEdit) then
+       TATSynEdit(edit).Invalidate;
+  end;
+end;
+
 function TreeFindNode(ATree: TTreeView; ANode: TTreeNode; const ANodeText: string): TTreeNode;
 var
   N: TTreeNode;
@@ -950,7 +970,7 @@ begin
 
       if not FEnabledSublexerTreeNodes then
       begin
-        NameRule:= R.Rule.SyntOwner.LexerName;
+        NameRule:= TecSyntAnalyzer(R.Rule.SyntOwner).LexerName;
         //must allow lexer name "PHP_" if main lexer is "PHP"
         if NameRule[Length(NameRule)]='_' then
           SetLength(NameRule, Length(NameRule)-1);
@@ -1217,6 +1237,7 @@ begin
 
     AnClient.WaitTillCoherent();
     try
+    //Ed.LoadFromFile();
     Buffer.Setup(Ed.Strings.TextString_Unicode(cMaxLenToTokenize), Lens);
     finally AnClient.ReleaseBackgroundLock();end;
   end;
@@ -1235,14 +1256,23 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.UpdateRanges;
+procedure TATAdapterEControl.UpdateRanges();
+var hasClient:boolean;
 begin
   {$IFDEF DEBUGLOG}
-  TSynLog.Add.Log(sllCustom1, 'UpdateRanges');
+  TSynLog.Add.Log(sllCustom4, 'UpdateRanges');
   {$ENDIF}
+  hasClient:= Assigned(AnClient);
+  if hasClient then
+     AnClient.WaitTillCoherent(false);
+  try
   DoClearRanges;
   UpdateRangesFoldAndColored;
   UpdateRangesSublex; //sublexer ranges last
+  finally
+   if hasClient  then AnClient.ReleaseBackgroundLock();
+  end;
+
   UpdateRangesActiveAll;
 end;
 
@@ -1267,7 +1297,7 @@ end;
 
 procedure TATAdapterEControl.DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
 var
-  NLine, NPos: integer;
+  lastPaintPos: integer;
 begin
   if AnClient=nil then exit;
   if Buffer.TextLength=0 then exit;
@@ -1284,13 +1314,10 @@ begin
   else  begin
     //LineBottom=0, if file just opened at beginning.
     //or >0 of file is edited at some scroll pos
-    NLine:= AEdit.LineBottom;
-    if NLine=0 then
-      NLine:= AEdit.GetVisibleLines;
-    NLine:= Min(NLine, Buffer.Count-1);
-    NPos:= Buffer.CaretToStr(Point(0, NLine));
-    AnClient.AppendToPos(NPos);
-    AnClient.HandleAddWork;
+    lastPaintPos:=CalcLastVisiblePos(AEdit);
+    FLastPaintPos:=lastPaintPos;
+    AnClient.AppendToPos(lastPaintPos);
+   // AnClient.HandleAddWork;
   end;
 
   if AnClient.ParserStatus>=psAborted then
@@ -1515,13 +1542,17 @@ begin
     exit
   end;
   exit;
-  if not Assigned(AnClient) then Exit;
+  if not Assigned(AnClient) or (AnClient.ParserStatus>=psAborted) then Exit;
+  if (AnClient.LastPos<=FLastPaintPos) then
+      InvalidateEditors();
+
+
   if (FBusyTreeUpdate or FBusyTimer) then Exit;
   FBusyTimer:= true;
   try
     if AnClient.ParserStatus>=psAborted then begin
       TimerDuringAnalyze.Enabled:= false;
-      UpdateRanges;
+      //UpdateRanges(true);
       DoParseDone;
     end;
   finally
@@ -1579,20 +1610,31 @@ end;
 procedure TATAdapterEControl.SyntaxDoneHandler();
 begin
   FUpdateSyntaxPending:=false;
+  AnClient.WaitTillCoherent(false);
   DoParseDone;
+  AnClient.ReleaseBackgroundLock();
 end;
 
 procedure TATAdapterEControl.AppendToPosDone();
-var edit:Pointer;
 begin
-  {$IFDEF DEBUGLOG}
-  TSynLog.Add.Log(sllClient, 'AppendToPosDone');
-  {$ENDIF}
- for edit in  EdList do begin
-   if assigned(edit) and (TObject(edit) is TATSynEdit) then
-      TATSynEdit(edit).Invalidate;
- end;
+ FLastPaintPos:=-1;
+ AnClient.WaitTillCoherent();
+ UpdateRanges();
+ AnClient.ReleaseBackgroundLock();
+ InvalidateEditors;
+end;
 
+function TATAdapterEControl.CalcLastVisiblePos(const AEdit: TATSynEdit): integer;
+var
+  lastPaintLine: integer;
+begin
+  lastPaintLine:= AEdit.LineBottom;
+  if lastPaintLine=0 then
+    lastPaintLine:= AEdit.GetVisibleLines;
+  Inc(lastPaintLine,30);
+  lastPaintLine:= Min(lastPaintLine, Buffer.Count-1);
+  Result:= Buffer.CaretToStr(Point(0, lastPaintLine));
+  Result:=Result;
 end;
 
 procedure TATAdapterEControl.DoParseBegin;
@@ -1607,7 +1649,7 @@ procedure TATAdapterEControl.DoParseDone;
 begin
   //UpdateRanges call needed for small files, which are parsed to end by one IdleAppend call,
   //and timer didn't tick
-  UpdateRanges;
+  UpdateRanges();
   FTimeParseElapsed:= GetTickCount64-FTimeParseBegin;
   if Assigned(FOnParseDone) then
     FOnParseDone(Self);
