@@ -1151,7 +1151,7 @@ end;
 
 procedure TATAdapterEControl.SetLexer(AAnalizer: TecSyntAnalyzer);
 begin
-  Stop;
+  //Stop;
   DoClearRanges;
   UpdateEditors(false, true);
 
@@ -1209,7 +1209,6 @@ begin
 
   AnClient.WaitTillCoherent();
   try
-    Buffer.Unlock; //AT: workaround for assert violation on commenting lines in Python files
     Buffer.Setup(Strs.TextString_Unicode(cMaxLenToTokenize), Lens);
   finally
     AnClient.ReleaseBackgroundLock();
