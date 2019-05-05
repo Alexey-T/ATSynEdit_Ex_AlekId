@@ -117,7 +117,6 @@ type
     procedure DoParseDone;
     function GetIdleInterval: integer;
     function GetRangeParent(const R: TecTextRange): TecTextRange;
-    procedure InvalidateEditors;
     function IsCaretInRange(AEdit: TATSynEdit; APos1, APos2: TPoint; ACond: TATRangeCond): boolean;
     function GetTokenColorBG_FromColoredRanges(constref APos: TPoint;
       ADefColor: TColor; AEditorIndex: integer): TColor;
@@ -924,16 +923,6 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.InvalidateEditors;
-var
-  edit: Pointer;
-begin
-  for edit in  EdList do begin
-    if assigned(edit) and (TObject(edit) is TATSynEdit) then
-       TATSynEdit(edit).Invalidate;
-  end;
-end;
-
 function TreeFindNode(ATree: TTreeView; ANode: TTreeNode; const ANodeText: string): TTreeNode;
 var
   N: TTreeNode;
@@ -1564,8 +1553,7 @@ begin
   exit;
   if not Assigned(AnClient) or (AnClient.ParserStatus>=psAborted) then Exit;
   if (AnClient.LastPos<=FLastPaintPos) then
-      InvalidateEditors();
-
+    UpdateEditors(true, false);
 
   if (FBusyTreeUpdate or FBusyTimer) then Exit;
   FBusyTimer:= true;
@@ -1644,7 +1632,7 @@ begin
  finally
   AnClient.ReleaseBackgroundLock();
  end;
- InvalidateEditors;
+ UpdateEditors(true, false);
 end;
 
 function TATAdapterEControl.CalcLastVisiblePos(const AEdit: TATSynEdit): integer;
@@ -1726,4 +1714,3 @@ begin
 end;
 
 end.
-
