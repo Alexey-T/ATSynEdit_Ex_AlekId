@@ -124,7 +124,8 @@ type
     procedure UpdateRangesActiveAll;
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
-    procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
+    procedure UpdateBuffer;
+    procedure UpdateState;
     procedure UpdateRangesFoldAndColored;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
@@ -364,8 +365,10 @@ var
 begin
   if not Assigned(AnClient) then Exit;
   DoCheckEditorList;
+
+  //TODO: maybe move this side effect to OnEditorBeforeCalcHilite
   if ALineIndex > AnClient.ParseOffsetTarget.Y then begin
-     UpdateData(false, true);
+     UpdateState;
      exit;
   end;
 
@@ -1183,8 +1186,9 @@ begin
   if Assigned(AAnalizer) then
   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil,self, true);
-
-    UpdateData(true, true);
+    if Buffer.TextLength=0 then
+      UpdateBuffer;
+    UpdateState;
   end;
 
   if Assigned(FOnLexerChange) then
@@ -1196,56 +1200,60 @@ end;
 procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
 begin
   DoCheckEditorList;
-  //if CurrentIdleInterval=0, OnEditorIdle will not fire, analyze here
-  UpdateData(true, CurrentIdleInterval=0);
+  UpdateBuffer;
+  if CurrentIdleInterval=0 then //OnEditorIdle will not fire, analyze here
+    UpdateState;
 end;
 
 procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateData(false, true);
- // UpdateEditors(true, true);
+  UpdateState;
+  //UpdateEditors(true, true);
 end;
 
-procedure TATAdapterEControl.UpdateData(AUpdateBuffer, AAnalyze: boolean);
+
+procedure TATAdapterEControl.UpdateBuffer;
 var
-  Ed: TATSynEdit;
   Lens: array of integer;
+  Strs: TATStrings;
   i: integer;
 begin
-  if EdList.Count=0 then Exit;
-  if not Assigned(AnClient) then Exit;
+  if not Assigned(AnClient) then exit;
+  AnClient.StopSyntax(false);
 
+  if EdList.Count=0 then Exit;
+  Strs:= TATSynEdit(EdList[0]).Strings;
+  SetLength(Lens{%H-}, Strs.Count);
+
+  for i:= 0 to Length(Lens)-1 do
+    Lens[i]:= Strs.LinesLen[i];
+
+  AnClient.WaitTillCoherent();
+  try
+    Buffer.Setup(Strs.TextString_Unicode(cMaxLenToTokenize), Lens);
+  finally
+    AnClient.ReleaseBackgroundLock();
+  end;
+end;
+
+procedure TATAdapterEControl.UpdateState;
+var
+  Ed: TATSynEdit;
+begin
+  if not Assigned(AnClient) then Exit;
+  if EdList.Count=0 then Exit;
   Ed:= TATSynEdit(EdList[0]);
 
-  if AUpdateBuffer then
-  begin
-    AnClient.StopSyntax(false);
-    SetLength(Lens{%H-}, Ed.Strings.Count);
+  DoUpdatePending;
+  DoAnalize(Ed, false);
 
-    for i:= 0 to Length(Lens)-1 do
-      Lens[i]:= Ed.Strings.LinesLen[i];
-
-
-    AnClient.WaitTillCoherent();
-    try
-    //Ed.LoadFromFile();
-    Buffer.Setup(Ed.Strings.TextString_Unicode(cMaxLenToTokenize), Lens);
-    finally AnClient.ReleaseBackgroundLock();end;
-  end;
-
-  if AAnalyze then  begin
-    DoUpdatePending;
-
-    DoAnalize(Ed, false);
-
-    {
-    //don't clear ranges too early (avoid flicker with empty fold bar)
-    if not EditorRunningCommand
-      or IsDynamicHiliteEnabled then
-      UpdateRanges;
-      }
-  end;
+  {
+  //don't clear ranges too early (avoid flicker with empty fold bar)
+  if not EditorRunningCommand
+    or IsDynamicHiliteEnabled then
+    UpdateRanges;
+    }
 end;
 
 procedure TATAdapterEControl.UpdateRanges();
