@@ -497,8 +497,8 @@ begin
   Color:= CompletionOps.ColorBg;
   List.Color:= CompletionOps.ColorBg;
   List.Font.Name:= CompletionOps.FontName;
-  List.Font.Size:= CompletionOps.FontSize;
-  List.ItemHeight:= CompletionOps.ItemHeight;
+  List.Font.Size:= EditorScaleFont(CompletionOps.FontSize);
+  List.ItemHeight:= EditorScaleFont(CompletionOps.ItemHeight);
   List.BorderSpacing.Around:= CompletionOps.BorderSize;
   List.Invalidate;
 
