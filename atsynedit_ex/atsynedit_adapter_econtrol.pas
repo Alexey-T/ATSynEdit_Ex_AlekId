@@ -133,6 +133,7 @@ type
     function IsDynamicHiliteEnabled: boolean;
     procedure SyntaxDoneHandler();
     procedure AppendToPosDone();
+    procedure DeferredUpdateTree();
   protected
     function CalcLastVisiblePos(const AEdit: TATSynEdit): integer;
   public
@@ -945,7 +946,7 @@ begin
 
   try
     ClearTreeviewWithData(ATree);
-    if AnClient=nil then exit;
+//    if AnClient=nil then exit;
     AnClient.WaitTillCoherent();
     try
     NameLexer:= AnClient.Owner.LexerName;
@@ -1618,6 +1619,11 @@ begin
  UpdateEditors(true, false);
 end;
 
+procedure TATAdapterEControl.DeferredUpdateTree();
+begin
+   FOnParseDone(Self);
+end;
+
 function TATAdapterEControl.CalcLastVisiblePos(const AEdit: TATSynEdit): integer;
 var
   lastPaintLine: integer;
@@ -1655,7 +1661,7 @@ begin
 
 
  if Assigned(FOnParseDone) then
-    FOnParseDone(Self);
+       TThread.ForceQueue(nil, DeferredUpdateTree);
 
  FLastPaintPos:=-1;
  FUpdateSyntaxPending:=false;
