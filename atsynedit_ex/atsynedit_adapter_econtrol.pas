@@ -101,7 +101,7 @@ type
     procedure DebugRangesColored;
     procedure DoCheckEditorList; inline;
     procedure DoFoldAdd(AX, AY, AY2: integer; AStaple: boolean; const AHint: string);
-    procedure DoCalcParts(var AParts: TATLineParts; lineIndex, lineOffset, lineLength: integer;
+    procedure DoCalcParts(var AParts: TATLineParts; ALineIndex, ALineOffset, ALineLength: integer;
       AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
     procedure DoClearRanges;
     function DoFindToken(constref APos: TPoint): integer; inline;
@@ -124,7 +124,8 @@ type
     procedure UpdateRangesActiveAll;
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
-    procedure UpdateData(AUpdateBuffer, AAnalyze: boolean);
+    procedure UpdateBuffer;
+    procedure UpdateState;
     procedure UpdateRangesFoldAndColored;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
@@ -364,8 +365,10 @@ var
 begin
   if not Assigned(AnClient) then Exit;
   DoCheckEditorList;
+
+  //TODO: maybe move this side effect to OnEditorBeforeCalcHilite
   if ALineIndex > AnClient.ParseOffsetTarget.Y then begin
-     UpdateData(false, true);
+     UpdateState;
      exit;
   end;
 
@@ -557,8 +560,8 @@ begin
 end;
 
 
-procedure TATAdapterEControl.DoCalcParts(var AParts: TATLineParts; lineIndex, lineOffset,
-  lineLength: integer; AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
+procedure TATAdapterEControl.DoCalcParts(var AParts: TATLineParts; ALineIndex, ALineOffset,
+  ALineLength: integer; AColorFont, AColorBG: TColor; var AColorAfter: TColor; AEditorIndex: integer);
 var
   Ed: TATSynEdit;
   Strings: TATStrings;
@@ -582,14 +585,14 @@ var
 
     //check that part's last char is space (ie it's space part),
     //and set for it clNone
-    if Strings.LineSub(lineIndex, AOffset+ALen+lineOffset-1, 1)=' ' then
+    if Strings.LineSub(ALineIndex, AOffset+ALen+ALineOffset-1, 1)=' ' then
       part^.ColorFont:= clNone
     else
     *)
       part^.ColorFont:= nColorText;
 
     part^.ColorBG:= GetTokenColorBG_FromColoredRanges(
-      Point(lineOffset+AOffset, lineIndex),
+      Point(ALineOffset+AOffset, ALineIndex),
       AColorBG,
       AEditorIndex);
 
@@ -612,7 +615,7 @@ begin
   Strings:= Ed.Strings;
   nColorText:= Ed.Colors.TextFont;
 
-  startindex:= DoFindToken(Point(0, lineIndex));
+  startindex:= DoFindToken(Point(0, ALineIndex));
   if startindex<0 then
     startindex:= 0;
 
@@ -624,22 +627,22 @@ begin
     tokenStart:= token.Range.PointStart;
     tokenEnd:= token.Range.PointEnd;
 
-    Dec(tokenStart.x, lineOffset);
-    Dec(tokenEnd.x, lineOffset);
+    Dec(tokenStart.x, ALineOffset);
+    Dec(tokenEnd.x, ALineOffset);
 
-    if (tokenStart.y>lineIndex) then Break;
-    if (tokenStart.y>lineIndex) or (tokenEnd.y<lineIndex) then Continue;
-    if (tokenEnd.y<=lineIndex) and (tokenEnd.x<0) then Continue;
-    if (tokenStart.y>=lineIndex) and (tokenStart.x>=lineLength) then Continue;
+    if (tokenStart.y>ALineIndex) then Break;
+    if (tokenStart.y>ALineIndex) or (tokenEnd.y<ALineIndex) then Continue;
+    if (tokenEnd.y<=ALineIndex) and (tokenEnd.x<0) then Continue;
+    if (tokenStart.y>=ALineIndex) and (tokenStart.x>=ALineLength) then Continue;
 
     FillChar(part{%H-}, SizeOf(part), 0);
-    if (tokenStart.y<lineIndex) or (tokenStart.x<0) then
+    if (tokenStart.y<ALineIndex) or (tokenStart.x<0) then
       part.Offset:= 0
     else
       part.Offset:= tokenStart.X;
 
-    if (tokenEnd.y>lineIndex) or (tokenEnd.x>=lineLength) then
-      part.Len:= lineLength-part.Offset
+    if (tokenEnd.y>ALineIndex) or (tokenEnd.x>=ALineLength) then
+      part.Len:= ALineLength-part.Offset
     else
       part.Len:= tokenEnd.X-part.Offset;
 
@@ -680,15 +683,15 @@ begin
   //add ending missing part
   //(not only if part.Len>0)
   mustOffset:= part.Offset+part.Len;
-  if mustOffset<lineLength then
-    AddMissingPart(mustOffset, lineLength-mustOffset);
+  if mustOffset<ALineLength then
+    AddMissingPart(mustOffset, ALineLength-mustOffset);
 
   //calc AColorAfter
-  TestPoint:= Point(lineOffset+lineLength, lineIndex);
+  TestPoint:= Point(ALineOffset+ALineLength, ALineIndex);
 
   //a) calc it from colored-ranges
   nColor:= GetTokenColorBG_FromColoredRanges(TestPoint, clNone, AEditorIndex);
-  //if (nColor=clNone) and (lineLength>0) then
+  //if (nColor=clNone) and (ALineLength>0) then
   //  nColor:= GetTokenColorBG_FromColoredRanges(mustOffset-1, clNone, AEditorIndex);
 
   //b) calc it from multi-line tokens (with bg-color)
@@ -1183,8 +1186,9 @@ begin
   if Assigned(AAnalizer) then
   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil,self, true);
-
-    UpdateData(true, true);
+    if Buffer.TextLength=0 then
+      UpdateBuffer;
+    UpdateState;
   end;
 
   if Assigned(FOnLexerChange) then
@@ -1196,56 +1200,60 @@ end;
 procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
 begin
   DoCheckEditorList;
-  //if CurrentIdleInterval=0, OnEditorIdle will not fire, analyze here
-  UpdateData(true, CurrentIdleInterval=0);
+  UpdateBuffer;
+  if CurrentIdleInterval=0 then //OnEditorIdle will not fire, analyze here
+    UpdateState;
 end;
 
 procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateData(false, true);
- // UpdateEditors(true, true);
+  UpdateState;
+  //UpdateEditors(true, true);
 end;
 
-procedure TATAdapterEControl.UpdateData(AUpdateBuffer, AAnalyze: boolean);
+
+procedure TATAdapterEControl.UpdateBuffer;
 var
-  Ed: TATSynEdit;
   Lens: array of integer;
+  Strs: TATStrings;
   i: integer;
 begin
-  if EdList.Count=0 then Exit;
-  if not Assigned(AnClient) then Exit;
+  if not Assigned(AnClient) then exit;
+  AnClient.StopSyntax(false);
 
+  if EdList.Count=0 then Exit;
+  Strs:= TATSynEdit(EdList[0]).Strings;
+  SetLength(Lens{%H-}, Strs.Count);
+
+  for i:= 0 to Length(Lens)-1 do
+    Lens[i]:= Strs.LinesLen[i];
+
+  AnClient.WaitTillCoherent();
+  try
+    Buffer.Setup(Strs.TextString_Unicode(cMaxLenToTokenize), Lens);
+  finally
+    AnClient.ReleaseBackgroundLock();
+  end;
+end;
+
+procedure TATAdapterEControl.UpdateState;
+var
+  Ed: TATSynEdit;
+begin
+  if not Assigned(AnClient) then Exit;
+  if EdList.Count=0 then Exit;
   Ed:= TATSynEdit(EdList[0]);
 
-  if AUpdateBuffer then
-  begin
-    AnClient.StopSyntax(false);
-    SetLength(Lens{%H-}, Ed.Strings.Count);
+  DoUpdatePending;
+  DoAnalize(Ed, false);
 
-    for i:= 0 to Length(Lens)-1 do
-      Lens[i]:= Ed.Strings.LinesLen[i];
-
-
-    AnClient.WaitTillCoherent();
-    try
-    //Ed.LoadFromFile();
-    Buffer.Setup(Ed.Strings.TextString_Unicode(cMaxLenToTokenize), Lens);
-    finally AnClient.ReleaseBackgroundLock();end;
-  end;
-
-  if AAnalyze then  begin
-    DoUpdatePending;
-
-    DoAnalize(Ed, false);
-
-    {
-    //don't clear ranges too early (avoid flicker with empty fold bar)
-    if not EditorRunningCommand
-      or IsDynamicHiliteEnabled then
-      UpdateRanges;
-      }
-  end;
+  {
+  //don't clear ranges too early (avoid flicker with empty fold bar)
+  if not EditorRunningCommand
+    or IsDynamicHiliteEnabled then
+    UpdateRanges;
+    }
 end;
 
 procedure TATAdapterEControl.UpdateRanges();
@@ -1628,7 +1636,6 @@ begin
   Inc(lastPaintLine,30);
   lastPaintLine:= Min(lastPaintLine, Buffer.Count-1);
   Result:= Buffer.CaretToStr(Point(0, lastPaintLine));
-  Result:=Result;
 end;
 
 procedure TATAdapterEControl.DoParseBegin;
@@ -1645,14 +1652,14 @@ begin
   //UpdateRanges call needed for small files, which are parsed to end by one IdleAppend call,
   //and timer didn't tick
   FTimeParseElapsed:= GetTickCount64-FTimeParseBegin;
- AnClient.WaitTillCoherent();
- try
-  UpdateRanges();
-  UpdateEditors(true, true);
- finally
-  AnClient.ReleaseBackgroundLock();
- end;
 
+  AnClient.WaitTillCoherent();
+  try
+    UpdateRanges();
+    UpdateEditors(true, true);
+  finally
+    AnClient.ReleaseBackgroundLock();
+  end;
 
  if Assigned(FOnParseDone) then
     FOnParseDone(Self);
