@@ -527,7 +527,7 @@ end;
 procedure TATAdapterEControl.UpdateRangesActive(AEdit: TATSynEdit);
 var
   Rng, RngOut: TATSortedRange;
-  i, j, rangeCount: integer;
+  i, j, RangeCount: integer;
 begin
   if not IsDynamicHiliteEnabled then Exit;
   {$IFDEF DEBUGLOG}
@@ -538,8 +538,8 @@ begin
 
   //deactivate ranges by DynSelectMin
   //cycle back, to see first nested ranges
- rangeCount:=FRangesColored.Count;
-  for i:= rangeCount-1 downto 0 do
+  RangeCount:= FRangesColored.Count;
+  for i:= RangeCount-1 downto 0 do
   begin
     Rng:= FRangesColored[i];
     if not Rng.Active[AEdit.EditorIndex] then Continue;
@@ -756,21 +756,21 @@ begin
 end;
 
 destructor TATAdapterEControl.Destroy;
-var cl:TecClientSyntAnalyzer;
+var
+  cl: TecClientSyntAnalyzer;
 begin
-  cl:=AnClient;
+  cl:= AnClient;
   AnClient:=nil;
 
-
-  if assigned(cl) then begin
+  if Assigned(cl) then begin
     cl.FireAdapterDetached();
     cl.StopSyntax(true);
   end;
   AddEditor(nil);
 
   if Assigned(cl) then begin
-     Application.ProcessMessages;
-     FreeAndNil(cl);
+    Application.ProcessMessages;
+    FreeAndNil(cl);
   end;
 
   FreeAndNil(FRangesSublexer);
@@ -937,11 +937,16 @@ var
   NameRule, NameLexer: string;
   NodeData: pointer;
   RangeNew: TATRangeInCodeTree;
+  bSyntaxBusy: boolean;
   i: integer;
-  isSynataxBusy:boolean;
 begin
-  isSynataxBusy:= assigned(AnClient) and (AnClient.ParserStatus<psAborted);
-  if isSynataxBusy then exit;
+  bSyntaxBusy:= Assigned(AnClient) and (AnClient.ParserStatus<psAborted);
+  if bSyntaxBusy then exit;
+
+  //TODO:
+  //change this: a) do Sleep(250) until parsing completed,
+  //or b) call TreeFill from OnParseDone (now it's called by timer)
+
   FStopTreeUpdate:= false;
   FBusyTreeUpdate:= true;
   //ATree.Items.BeginUpdate;
@@ -1257,26 +1262,26 @@ begin
 end;
 
 procedure TATAdapterEControl.UpdateRanges();
-var hasClient:boolean;
+var
+  HasClient: boolean;
 begin
   {$IFDEF DEBUGLOG}
   TSynLog.Add.Log(sllCustom4, 'UpdateRanges');
   {$ENDIF}
-  hasClient:= Assigned(AnClient);
-  if hasClient then
-     AnClient.WaitTillCoherent(false);
+
+  HasClient:= Assigned(AnClient);
+  if HasClient then
+    AnClient.WaitTillCoherent(false);
   try
     DoClearRanges;
 
     UpdateRangesSublex; //sublexer ranges last
     UpdateRangesActiveAll;
     UpdateRangesFoldAndColored;
-
   finally
-   if hasClient  then AnClient.ReleaseBackgroundLock();
+    if HasClient then
+      AnClient.ReleaseBackgroundLock();
   end;
-
-
 end;
 
 procedure TATAdapterEControl.UpdateRangesActiveAll;
@@ -1615,15 +1620,17 @@ end;
 procedure TATAdapterEControl.AppendToPosDone();
 begin
   if AnClient=nil then exit;
- FLastPaintPos:=-1;
- AnClient.WaitTillCoherent();
- try
- UpdateRanges();
- UpdateEditors(false, true);
- finally
-  AnClient.ReleaseBackgroundLock();
- end;
- UpdateEditors(true, false);
+  FLastPaintPos:= -1;
+
+  AnClient.WaitTillCoherent();
+  try
+    UpdateRanges();
+    UpdateEditors(false, true);
+  finally
+    AnClient.ReleaseBackgroundLock();
+  end;
+
+  UpdateEditors(true, false);
 end;
 
 function TATAdapterEControl.CalcLastVisiblePos(const AEdit: TATSynEdit): integer;
