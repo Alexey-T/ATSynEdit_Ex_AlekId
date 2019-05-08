@@ -1647,8 +1647,13 @@ begin
   if lastPaintLine=0 then
     lastPaintLine:= AEdit.GetVisibleLines;
   Inc(lastPaintLine,30);
+  if lastPaintLine>Buffer.Count then begin
+    Result := Buffer.TextLength-1;
+    exit;
+  end;
   lastPaintLine:= Min(lastPaintLine, Buffer.Count-1);
   Result:= Buffer.CaretToStr(Point(0, lastPaintLine));
+  Result :=   Buffer.OffsetToOffsetOfLineEnd(Result);
 end;
 
 procedure TATAdapterEControl.DoParseBegin;
