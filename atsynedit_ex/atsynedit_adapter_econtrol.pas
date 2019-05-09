@@ -377,6 +377,9 @@ begin
 
   if not  AnClient.GetIsLineParsed(ALineIndex) then begin
     {$IFDEF DEBUGLOG}
+    if ALineIndex<10 then begin
+          AnClient.GetIsLineParsed(ALineIndex);
+     end;
      TSynLog.Add.Log(sllDDDError, 'CalcHilite: Missed line %', [ALineIndex]);
     {$ENDIF}
     exit;
@@ -855,7 +858,7 @@ begin
   end;
 
   if Assigned(AnClient) then
-    Result:= AnClient.StopSyntax(false);
+    result:=AnClient.StopSyntax(false);
 end;
 
 
@@ -1205,25 +1208,30 @@ end;
 
 procedure TATAdapterEControl.SetLexer(AAnalizer: TecSyntAnalyzer);
 begin
-  DoClearRanges;
-  UpdateEditors(false, true);
+  //DoClearRanges;
+  //UpdateEditors(false, true);
 
   if Assigned(AnClient) then
     FreeAndNil(AnClient);
 
-  DoParseBegin;
+ // DoParseBegin;
 
-  if Assigned(AAnalizer) then
-  begin
+  if Assigned(AAnalizer) then   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil,self, true);
-    if Buffer.TextLength=0 then
+    if Assigned(FOnLexerChange) then
+      FOnLexerChange(Self);
+   // if Buffer.TextLength=0 then
     SyncWithParser(true);
+  end
+  else begin
+    DoClearRanges;
+    UpdateEditors(false, true);
+    if Assigned(FOnLexerChange) then
+      FOnLexerChange(Self);
   end;
-
-  if Assigned(FOnLexerChange) then
-    FOnLexerChange(Self);
-
   DynamicHiliteSupportedInCurrentSyntax:= GetLexerSuportsDynamicHilite;
+
+
 end;
 
 procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
@@ -1662,7 +1670,7 @@ begin
   if AnClient=nil then exit;
   FLastPaintPos:= -1;
 
-  AnClient.WaitTillCoherent();
+  AnClient.WaitTillCoherent(true);
   try
     UpdateRanges();
     UpdateEditors(false, true);
