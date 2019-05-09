@@ -19,7 +19,7 @@
       <Other>
         <CustomOptions Value="-Sa
 -dDEBUG
--dDEBUGLOG"/>
+-dDEBUGLOG__"/>
       </Other>
     </CompilerOptions>
     <Description Value="Package, additional to ATSynEdit. It has the following parts splitted from ATSynEdit, to avoid build errors:

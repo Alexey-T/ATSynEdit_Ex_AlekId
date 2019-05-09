@@ -811,7 +811,7 @@ begin
       EdList.Add(AEditor);
       TATSynEdit(AEditor).Strings.OnLog:= DoChangeLog;
       TATSynEdit(AEditor).AdapterForHilite:= Self;
-      TATSynEdit(AEditor).OptAllowRepaintOnTextChange:= false;
+      //TATSynEdit(AEditor).OptAllowRepaintOnTextChange:= false;
     end;
   end;
 end;
