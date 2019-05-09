@@ -361,8 +361,11 @@ end;
 procedure TATAdapterEControl.OnEditorCalcHilite(Sender: TObject;
   var AParts: TATLineParts; ALineIndex, ACharIndex, ALineLen: integer;
   var AColorAfterEol: TColor);
+
+
 var
   Ed: TATSynEdit;
+
 begin
   if not Assigned(AnClient) then Exit;
   DoCheckEditorList;
@@ -373,7 +376,10 @@ begin
      exit;
   end;
 
-  //AnClient.LastPos;
+
+  if not  AnClient.GetIsLineParsed(ALineIndex) then
+    exit;
+
 
   Ed:= Sender as TATSynEdit;
 
@@ -615,6 +621,7 @@ begin
   Ed:= TATSynEdit(EdList[0]);
   Strings:= Ed.Strings;
   nColorText:= Ed.Colors.TextFont;
+
 
   startindex:= DoFindToken(Point(0, ALineIndex));
   if startindex<0 then
@@ -1647,7 +1654,7 @@ begin
   if lastPaintLine=0 then
     lastPaintLine:= AEdit.GetVisibleLines;
   Inc(lastPaintLine,30);
-  if lastPaintLine>Buffer.Count then begin
+  if lastPaintLine>=Buffer.Count then begin
     Result := Buffer.TextLength-1;
     exit;
   end;
