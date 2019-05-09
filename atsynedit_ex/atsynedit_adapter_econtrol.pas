@@ -106,6 +106,7 @@ type
     procedure DoClearRanges;
     function DoFindToken(constref APos: TPoint): integer; inline;
     procedure DoUpdatePending;
+    function EnsureParserTargeted(const ALineIndex: integer): boolean;
     function GetTokenColor_FromBoundRanges(ATokenIndex, AEditorIndex: integer): TecSyntaxFormat;
     procedure DoFoldFromLinesHidden;
     procedure DoChangeLog(Sender: TObject; ALine: integer);
@@ -125,7 +126,7 @@ type
     procedure UpdateRangesActive_Ex(AEdit: TATSynEdit; List: TATSortedRanges);
     procedure UpdateRangesSublex;
     procedure UpdateBuffer;
-    procedure UpdateState;
+    procedure SyncWithParser(updateBuffer:boolean);
     procedure UpdateRangesFoldAndColored;
     procedure UpdateEditors(ARepaint, AClearCache: boolean);
     function GetLexer: TecSyntAnalyzer;
@@ -148,7 +149,7 @@ type
     property LexerParsingElapsed: integer read FTimeParseElapsed;
     function LexerAtPos(Pnt: TPoint): TecSyntAnalyzer;
     property EnabledSublexerTreeNodes: boolean read FEnabledSublexerTreeNodes write FEnabledSublexerTreeNodes default false;
-    procedure DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
+    procedure InvokeParser(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
     procedure DoAnalyzeFromLine(ALine: integer; AWait: boolean);
     function Stop: boolean;
     procedure StopTreeUpdate;
@@ -181,6 +182,7 @@ type
       var AParts: TATLineParts;
       ALineIndex, ACharIndex, ALineLen: integer;
       var AColorAfterEol: TColor); override;
+    procedure OnEditorBeforeCalcHilite(Sender: TObject); override;
     procedure OnEditorCalcPosColor(Sender: TObject;
       AX, AY: integer; var AColor: TColor); override;
   published
@@ -365,30 +367,38 @@ procedure TATAdapterEControl.OnEditorCalcHilite(Sender: TObject;
 
 var
   Ed: TATSynEdit;
-
+  alreadyTargeted:boolean;
 begin
   if not Assigned(AnClient) then Exit;
   DoCheckEditorList;
 
-  //TODO: maybe move this side effect to OnEditorBeforeCalcHilite
-  if ALineIndex > AnClient.ParseOffsetTarget.Y then begin
-     UpdateState;
-     exit;
-  end;
 
+  alreadyTargeted:=EnsureParserTargeted(ALineIndex);
 
-  if not  AnClient.GetIsLineParsed(ALineIndex) then
+  if not  AnClient.GetIsLineParsed(ALineIndex) then begin
+    {$IFDEF DEBUGLOG}
+     TSynLog.Add.Log(sllDDDError, 'CalcHilite: Missed line %', [ALineIndex]);
+    {$ENDIF}
     exit;
-
-
+  end;
   Ed:= Sender as TATSynEdit;
-
   AColorAfterEol:= clNone;
   DoCalcParts(AParts, ALineIndex, ACharIndex-1, ALineLen,
     Ed.Colors.TextFont,
     clNone,
     AColorAfterEol,
     Ed.EditorIndex);
+end;
+
+procedure TATAdapterEControl.OnEditorBeforeCalcHilite(Sender: TObject);
+var alreadyTargeted:boolean;
+    lineIx:integer;
+    Ed: TATSynEdit;
+  begin
+    Ed:= Sender as TATSynEdit;
+   if not assigned(AnClient) then exit;
+   lineIx := Ed.LineBottom;
+   EnsureParserTargeted(lineIx);
 end;
 
 procedure TATAdapterEControl.OnEditorCalcPosColor(Sender: TObject; AX,
@@ -621,7 +631,8 @@ begin
   Ed:= TATSynEdit(EdList[0]);
   Strings:= Ed.Strings;
   nColorText:= Ed.Colors.TextFont;
-
+  AnClient.WaitTillCoherent(true);
+  try
 
   startindex:= DoFindToken(Point(0, ALineIndex));
   if startindex<0 then
@@ -709,6 +720,10 @@ begin
   if (nColor=clNone) then
     nColor:= AColorAfter;
   AColorAfter:= nColor;
+
+  finally
+    AnClient.ReleaseBackgroundLock;
+  end;
 end;
 
 procedure TATAdapterEControl.DoClearRanges;
@@ -814,9 +829,11 @@ end;
 
 function TATAdapterEControl.LexerAtPos(Pnt: TPoint): TecSyntAnalyzer;
 begin
-  Result:= nil;
-  if AnClient<>nil then
-    Result:= AnClient.AnalyzerAtPos(Buffer.CaretToStr(Pnt));
+  if not assigned(AnClient) then exit(nil);
+  AnClient.WaitTillCoherent(true);
+  try
+  Result:= AnClient.AnalyzerAtPos(Buffer.CaretToStr(Pnt));
+  finally AnClient.ReleaseBackgroundLock();  end;
 end;
 
 procedure TATAdapterEControl.StopTreeUpdate;
@@ -1200,8 +1217,7 @@ begin
   begin
     AnClient:= TecClientSyntAnalyzer.Create(AAnalizer, Buffer, nil,self, true);
     if Buffer.TextLength=0 then
-      UpdateBuffer;
-    UpdateState;
+    SyncWithParser(true);
   end;
 
   if Assigned(FOnLexerChange) then
@@ -1213,15 +1229,15 @@ end;
 procedure TATAdapterEControl.OnEditorChange(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateBuffer;
-  if CurrentIdleInterval=0 then //OnEditorIdle will not fire, analyze here
-    UpdateState;
+//  UpdateBuffer;
+  if true {CurrentIdleInterval=0} then //OnEditorIdle will not fire, analyze here
+    SyncWithParser(true);
 end;
 
 procedure TATAdapterEControl.OnEditorIdle(Sender: TObject);
 begin
   DoCheckEditorList;
-  UpdateState;
+  SyncWithParser(false);
   //UpdateEditors(true, true);
 end;
 
@@ -1250,16 +1266,19 @@ begin
   end;
 end;
 
-procedure TATAdapterEControl.UpdateState;
+procedure TATAdapterEControl.SyncWithParser(updateBuffer:boolean);
 var
   Ed: TATSynEdit;
 begin
   if not Assigned(AnClient) then Exit;
   if EdList.Count=0 then Exit;
+  if updateBuffer then
+     self.UpdateBuffer;
+
   Ed:= TATSynEdit(EdList[0]);
 
   DoUpdatePending;
-  DoAnalize(Ed, false);
+  InvokeParser(Ed, false);
 
   {
   //don't clear ranges too early (avoid flicker with empty fold bar)
@@ -1311,7 +1330,7 @@ begin
         exit(true);
 end;
 
-procedure TATAdapterEControl.DoAnalize(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
+procedure TATAdapterEControl.InvokeParser(AEdit: TATSynEdit; AForceAnalizeAll: boolean);
 var
   lastPaintPos: integer;
 begin
@@ -1324,7 +1343,7 @@ begin
   begin
     AnClient.TextChanged(0);
     AnClient.Analyze;
-    AnClient.HandleAddWork();
+   // AnClient.HandleAddWork();
 
   end
   else  begin
@@ -1517,6 +1536,19 @@ begin
   //FRangesSublexer.Clear;
 end;
 
+function TATAdapterEControl.EnsureParserTargeted(const ALineIndex: integer
+  ): boolean;
+var
+   needToTarget: boolean;
+begin
+  needToTarget:=ALineIndex > AnClient.ParseOffsetTarget.Y;
+  if needToTarget then begin
+     SyncWithParser(false);
+     TThread.Sleep(0);
+  end;
+  Result:=not needToTarget;
+end;
+
 function TATAdapterEControl.GetLexer: TecSyntAnalyzer;
 begin
   if Assigned(AnClient) then
@@ -1702,7 +1734,7 @@ begin
   NPos:= Buffer.CaretToStr(Point(0, ALine));
   AnClient.ChangedAtPos(NPos);
   AnClient.AppendToPos(Buffer.TextLength);
-  AnClient.HandleAddWork;
+  //AnClient.HandleAddWork;
 
   if AnClient.ParserStatus>=psAborted then
   begin
