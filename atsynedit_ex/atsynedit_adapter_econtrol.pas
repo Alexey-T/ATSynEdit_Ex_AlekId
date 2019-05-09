@@ -798,7 +798,10 @@ begin
   if AEditor=nil then
   begin
     for i:= 0 to EdList.Count-1 do
+    begin
       TATSynEdit(EdList[i]).AdapterForHilite:= nil;
+      TATSynEdit(EdList[i]).OptAllowRepaintOnTextChange:= true;
+    end;
     EdList.Clear;
   end
   else
@@ -808,6 +811,7 @@ begin
       EdList.Add(AEditor);
       TATSynEdit(AEditor).Strings.OnLog:= DoChangeLog;
       TATSynEdit(AEditor).AdapterForHilite:= Self;
+      TATSynEdit(AEditor).OptAllowRepaintOnTextChange:= false;
     end;
   end;
 end;
