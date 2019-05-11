@@ -981,7 +981,7 @@ begin
 
   try
     ClearTreeviewWithData(ATree);
-//    if AnClient=nil then exit;
+    if AnClient=nil then exit;
     AnClient.WaitTillCoherent();
     try
     NameLexer:= AnClient.Owner.LexerName;
